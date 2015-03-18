@@ -1,0 +1,452 @@
+#!/bin/sh -efu
+
+. shell-args
+. shell-var
+. shell-quote
+. shell-cmdline
+. shell-git-config
+
+config_dir="${VM_CONFIG_DIR:-$HOME/.vm}"
+
+. "@PREFIX@/vm-options"
+
+show_help() {
+	cat <<EOF
+Usage: $PROG [options] <command> <profile>
+
+Commands:
+
+run
+
+Options:
+EOF
+	local n d i x m
+	for n in $vm_params; do
+		eval "m=\"\$${n}_description\""
+		eval "c=\"\${${n}_cmdline-}\""
+		eval "d=\"\${${n}_default-}\""
+
+		[ -n "$c" ] ||
+			continue
+
+		i="${#c}"
+		x='                  '
+		while [ $i -gt 0 ]; do
+			x="${x#?}"
+			i=$(($i-1))
+		done
+
+		printf '  --%s%s%s;\n' "$c" "$x" "$m${d:+ (default: '$d')}"
+	done
+	cat <<EOF
+
+  -V, --version       print program version and exit;
+  -h, --help          show this text and exit.
+
+Report bugs to author.
+
+EOF
+	exit
+}
+
+print_version() {
+	cat <<-EOF
+	$PROG version @VERSION@
+	Written by Alexey Gladkov <gladkov.alexey@gmail.com>
+
+	Copyright (C) 2015  Alexey Gladkov <gladkov.alexey@gmail.com>
+	This is free software; see the source for copying conditions.  There is NO
+	warranty; not even for MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+	EOF
+	exit
+}
+
+run_command() {
+	verbose "Executing: $*"
+	"$@"
+}
+
+vm_profile=
+config_file=
+get_param_one() {
+	local retv name default value=
+	retv="$1";    shift
+	name="$1";    shift
+	default="$1"; shift
+
+	if [ -n "$vm_profile" ]; then
+		git_config_get value "$config_file" "vm.$vm_profile.$name"
+		if [ -n "$value" ]; then
+			eval "$retv=\"\$value\""
+			return 0
+		fi
+	fi
+
+	git_config_get value "$config_file" "vm.$name"
+	if [ -n "$value" ]; then
+		eval "$retv=\"\$value\""
+		return 0
+	fi
+
+	eval "$retv=\"\$default\""
+	return 1
+}
+
+get_param_list() {
+	local retv name default i num value=
+	retv="$1";    shift
+	name="$1";    shift
+	default="$1"; shift
+
+	if [ -n "$vm_profile" ]; then
+		git_config_count num "$config_file" "vm.$vm_profile.$name"
+
+		if [ "$num" -eq 0 ]; then
+			eval "$retv=0"
+			return 1
+		fi
+
+		eval "$retv=\"\$num\""
+
+		i=0
+		while read l; do
+			eval "${retv}_$i=\"\$l\""
+			i=$(($i+1))
+		done <<-EOF
+		`git_config_list "$config_file" "vm.$vm_profile.$name"`
+		EOF
+
+		return 0
+	fi
+
+	git_config_count num "$config_file" "vm.$name"
+
+	if [ "$num" -eq 0 ]; then
+		eval "$retv=0"
+		return 1
+	fi
+
+	eval "$retv=\"\$num\""
+	i=0
+	while read l; do
+		eval "${retv}_$i=\"\$l\""
+		i=$(($i+1))
+	done <<-EOF
+	`git_config_list "$config_file" "vm.$name"`
+	EOF
+
+	return 0
+}
+
+qemu_cmdline=
+qemu_cmdline_names=' '
+append_cmdline() {
+	local n="$1" v="${2-}"
+	[ -n "${qemu_cmdline_names##*$n*}" ] ||
+		return 0
+	qemu_cmdline_names="$qemu_cmdline_names$n "
+	qemu_cmdline="${qemu_cmdline:+$qemu_cmdline }$n${v:+=$v}"
+}
+
+process_sandbox() {
+	[ -n "$do_sandbox" ] ||
+		return 0
+
+	case "$do_sandbox" in
+		builtin|initrd)
+			;;
+		*)
+			fatal "Unknown value: $do_sandbox"
+			;;
+	esac
+}
+
+qemu_exec=
+process_qemu_arch() {
+	qemu_exec="qemu-system-$qemu_arch"
+	"$qemu_exec" -version >/dev/null 2>&1 ||
+		fatal "Unsupported arch: $qemu_arch"
+}
+
+process_qemu_machine() {
+	[ -n "$qemu_machine" ] ||
+		return 0
+	qemu_args="$qemu_args -machine $qemu_machine"
+}
+
+process_qemu_cpu() {
+	[ -n "$qemu_cpu" ] ||
+		return 0
+	qemu_args="$qemu_args -cpu $qemu_cpu"
+}
+
+process_qemu_cpus()    {
+	[ -n "$qemu_cpus" ] ||
+		return 0
+	[ -n "${qemu_cpus##*[!0-9]*}" ] ||
+		fatal "Wrong value: $qemu_cpus"
+	qemu_args="$qemu_args -smp $qemu_cpus"
+}
+
+process_qemu_memory()  {
+	[ -n "$qemu_memory" ] ||
+		return 0
+	qemu_args="$qemu_args -m $qemu_memory"
+}
+
+process_qemu_console() {
+	[ -n "$qemu_console" ] ||
+		return 0
+
+	qemu_args="$qemu_args -chardev stdio,mux=on,id=stdio,signal=off"
+	qemu_args="$qemu_args -mon chardev=stdio,mode=readline,default"
+
+	case "$qemu_console" in
+		serial)
+			append_cmdline console ttyS0
+			qemu_args="$qemu_args -device isa-serial,chardev=stdio"
+			;;
+		virtio)
+			append_cmdline console hvc0
+			qemu_args="$qemu_args -device virtio-serial"
+			qemu_args="$qemu_args -device virtconsole,chardev=stdio"
+			;;
+		*)
+			#fatal "BUG: Unknown console type."
+			;;
+	esac
+}
+
+process_qemu_monitor() {
+	[ -n "$qemu_monitor" ] ||
+		return 0
+		
+	case "${qemu_monitor%%:*}" in
+		none)
+			qemu_args="$qemu_args -monitor none"
+			;;
+		qmp)
+			qemu_args="$qemu_args -qmp ${qemu_monitor#qmp:}"
+			;;
+		monitor)
+			qemu_args="$qemu_args -monitor ${qemu_monitor#monitor:}"
+			;;
+	esac
+}
+
+process_qemu_network() {
+	[ -n "$qemu_network" ] ||
+		return 0
+	case "$qemu_network" in
+		none)
+			qemu_args="$qemu_args -net none"
+			;;
+		*)
+			fatal "TODO: network"
+			;;
+	esac
+}
+
+process_qemu_kernel() {
+	[ -n "$qemu_kernel" ] ||
+		return 0
+	qemu_args="$qemu_args -kernel $qemu_kernel"
+}
+
+process_qemu_initrd() {
+	[ -n "$qemu_initrd" ] ||
+		return 0
+	[ -n "$qemu_kernel" ] ||
+		fatal "kernel required"
+	qemu_args="$qemu_args -initrd $qemu_initrd"
+}
+
+process_qemu_append() {
+	[ -n "$qemu_append" ] ||
+		return 0
+	[ -n "$qemu_kernel" ] ||
+		fatal "kernel required"
+	cmdline_foreach "$qemu_append" append_cmdline
+}
+
+process_qemu_addappend() {
+	[ -n "$qemu_addappend" ] ||
+		return 0
+	[ -n "$qemu_kernel" ] ||
+		fatal "kernel required"
+	cmdline_foreach "$qemu_addappend" append_cmdline
+}
+
+process_qemu_balloon() {
+	[ -n "$qemu_balloon" ] ||
+		return 0
+	! shell_var_is_yes "$qemu_balloon" ||
+		qemu_args="$qemu_args -balloon virtio"
+}
+
+process_qemu_kvm() {
+	[ -n "$qemu_kvm" ] ||
+		return 0
+	! shell_var_is_yes "$qemu_kvm" ||
+		qemu_args="$qemu_args -enable-kvm"
+}
+
+process_qemu_reboot() {
+	[ -n "$qemu_reboot" ] ||
+		return 0
+	! shell_var_is_no "$qemu_reboot" ||
+		qemu_args="$qemu_args -no-reboot"
+}
+
+process_qemu_graphic() {
+	[ -n "$qemu_graphic" ] ||
+		return 0
+	! shell_var_is_no "$qemu_graphic" ||
+		qemu_args="$qemu_args -nographic"
+}
+
+process_qemu_disk() {
+	[ -n "$qemu_disk" ] ||
+		return 0
+	local v i=0
+	while [ $i -lt $qemu_disk ]; do
+		eval "v=\"\$qemu_disk_$i\""
+		[ -n "${v##*[!,],[!,]*}" ] &&
+			qemu_args="$qemu_args -drive file=$v,if=virtio,cache=writeback" ||
+			qemu_args="$qemu_args -drive $v"
+		i=$(($i + 1))
+	done
+}
+
+process_qemu_virtfs() {
+	[ -n "$qemu_virtfs" ] ||
+		return 0
+	local q_p q_t q_v v i=0 devroot=
+	while [ $i -lt $qemu_virtfs ]; do
+		eval "v=\"\$qemu_virtfs_$i\""
+
+		if [ -n "${v##*[!,],[!,]*}" ]; then
+			quote_shell_variable q_p "${v%%:*}"
+			quote_shell_variable q_t "${v#*:}"
+
+			# Broken: http://patchwork.ozlabs.org/patch/127551/
+			# qemu_args="$qemu_args -virtfs local,id=virtfs-$i,path=$q_p,security_model=none,mount_tag=$q_t"
+
+			qemu_args="$qemu_args -fsdev local,id=virtfs-$i,path=$q_p,security_model=none"
+			qemu_args="$qemu_args -device virtio-9p-pci,fsdev=virtfs-$i,mount_tag=$q_t"
+		else
+			quote_shell_variable q_v "$v"
+			qemu_args="$qemu_args -virtfs $v"
+		fi
+
+		[ "$q_t" != '/dev/root' ] || devroot=1
+
+		i=$(($i + 1))
+	done
+
+	#if [ -n "$devroot" ]; then
+	#	append_cmdline root /dev/root
+	#	append_cmdline rootflags rw,trans=virtio,version=9p2000.L,setuid=0
+	#	append_cmdline rootfstype 9p
+	#	append_cmdline rw
+	#fi
+}
+
+set_cmdline_variable() {
+	local c n
+	for n in $vm_params; do
+		eval "c=\"\${${n}_cmdline-}\""
+		if [ "$c" = "$1" ]; then
+			eval "${n}=\"\$2\""
+			break
+		fi
+	done
+}
+
+read_config() {
+	local n t f c d
+
+	for n in $vm_params; do
+		eval "[ -z \"\${$n-}\" ] || continue"
+		eval "t=\"\$${n}_type\""
+		eval "c=\"\${${n}_cfgname-}\""
+		eval "d=\"\${${n}_default-}\""
+
+		[ -n "$c" ] ||
+			continue
+
+		case "$t" in
+			one|list)
+				;;
+			*)
+				fatal "Unknown value: $t"
+				;;
+		esac
+
+		"get_param_$t" "$n" "$c" "$d" ||:
+	done
+}
+
+qemu_args=
+process_params() {
+	local name
+	for name in $vm_params; do
+		"process_$name"
+	done
+}
+
+TEMP=`generate_getopt_args; getopt -n $PROG -o 'h,v,V' -l "${getopt_args}dry-run,help,verbose,version" -- "$@"` ||
+	show_usage
+eval set -- "$TEMP"
+
+vm_dryrun=
+while :; do
+	case "$1" in
+		--dry-run)
+			vm_dryrun=echo
+			;;
+		-v|--verbose) verbose=-v
+			;;
+		-h|--help) show_help
+			;;
+		-V|--version) print_version
+			;;
+		--[a-z]*)
+			set_cmdline_variable "${1#--}" "$2"
+			shift
+			;;
+		--) shift; break
+			;;
+	esac
+	shift
+done
+
+[ "$#" -ge 2 ] ||
+	show_usage "More arguments required."
+
+command="$1"; shift
+vm_profile="$1"; shift
+
+case "$command" in
+	run|sandbox)
+		;;
+	*)
+		show_usage "Command unknown: $command"
+		;;
+esac
+
+config_file="$config_dir/config"
+[ -s "$config_file" ] ||
+	fatal "Config file not found"
+verbose "Config file: $config_file"
+
+git_config_location_exists "$config_file" "vm.$vm_profile" ||
+	fatal "Profile not exists: vm.$vm_profile"
+
+read_config
+
+process_params
+
+export qemu_exec qemu_args qemu_cmdline vm_dryrun vm_profile
+
+run_command "@PREFIX@/vm-command-$command" "$@"

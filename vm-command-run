@@ -1,0 +1,20 @@
+#!/bin/sh -efu
+
+debug_exec() {
+	printf '%s \\\n' "$1"; shift
+	opt=
+	for a; do
+		if [ -z "${a##-*}" ]; then
+			[ -z "$opt" ] || printf '\\\n'
+			printf '\t%s ' "$a"
+			opt=1
+		else
+			printf '"%s" \\\n' "$a"
+			opt=
+		fi
+	done
+	printf '\t#\n'
+}
+
+${vm_dryrun:+debug_exec} \
+$qemu_exec $qemu_args ${qemu_cmdline:+-append "$qemu_cmdline"}

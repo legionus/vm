@@ -1,0 +1,180 @@
+#!/bin/sh -efu
+
+vm_params=' '
+
+getopt_args=
+generate_getopt_args() {
+	local n c
+	for n in $vm_params; do
+		eval "c=\"\${${n}_cmdline-}\""
+		[ -z "$c" ] ||
+			getopt_args="$getopt_args$c:,"
+	done
+}
+
+parameter() {
+	local vartype varname cfgname cmdline default description
+
+	varname="$1"; shift
+	vartype="$1"; shift
+	cfgname="$1"; shift
+	cmdline="$1"; shift
+	default="$1"; shift
+	description="$1"; shift
+
+	vm_params="$vm_params$varname "
+
+	[ -z "$cmdline" ] ||
+		eval "export ${varname}_cmdline=\"\$cmdline\""
+
+	[ -z "$cfgname" ] ||
+		eval "export ${varname}_cfgname=\"\$cfgname\""
+
+	eval "export ${varname}_default=\"$default\""
+	eval "export ${varname}_type=\"\$vartype\""
+	eval "export ${varname}_description=\"\$description\""
+}
+
+parameter \
+	'qemu_machine' \
+	'one' \
+	'machine' \
+	'machine' \
+	'type=q35,accel=kvm:tcg' \
+	'Specifying the emulated machine'
+
+parameter \
+	'qemu_arch' \
+	'one' \
+	'arch' \
+	'arch' \
+	'x86_64' \
+	'Specifying target architecture'
+
+parameter \
+	'qemu_cpu' \
+	'one' \
+	'cpu-model' \
+	'cpu-model' \
+	'kvm64' \
+	'Specifying CPU model'
+
+parameter \
+	'qemu_cpus' \
+	'one' \
+	'num-cpus' \
+	'num-cpus' \
+	'$(getconf _NPROCESSORS_ONLN)' \
+	'Simulate an SMP system with n CPUs'
+
+parameter \
+	'qemu_memory' \
+	'one' \
+	'memory' \
+	'memory' \
+	'$(( 64 * ($qemu_cpus_default + 3) ))M' \
+	'Specifying virtual RAM size'
+
+parameter \
+	'qemu_console' \
+	'one' \
+	'console' \
+	'console' \
+	'serial' \
+	'Specifying console type'
+
+parameter \
+	'qemu_network' \
+	'one' \
+	'network' \
+	'network' \
+	'none' \
+	'Specifying the mode network stack'
+
+parameter \
+	'qemu_kernel' \
+	'one' \
+	'kernel' \
+	'kernel' \
+	'' \
+	'Use bzImage as kernel image'
+
+parameter \
+	'qemu_initrd' \
+	'one' \
+	'initrd' \
+	'initrd' \
+	'' \
+	'Use file as initial ram disk'
+
+parameter \
+	'qemu_append' \
+	'one' \
+	'append' \
+	'append' \
+	'panic=-1 oops=panic' \
+	'Use cmdline as kernel command line'
+
+parameter \
+	'qemu_addappend' \
+	'one' \
+	'addappend' \
+	'addappend' \
+	'' \
+	'The kernel parameters from the specified string'
+
+parameter \
+	'qemu_balloon' \
+	'one' \
+	'balloon' \
+	'balloon' \
+	'none' \
+	'Enable virtio balloon device'
+
+parameter \
+	'qemu_kvm' \
+	'one' \
+	'enable-kvm' \
+	'enable-kvm' \
+	'false' \
+	'Enable KVM full virtualization support'
+
+parameter \
+	'qemu_reboot' \
+	'one' \
+	'reboot' \
+	'reboot' \
+	'false' \
+	'Exit instead of rebooting'
+
+parameter \
+	'qemu_monitor' \
+	'one' \
+	'monitor' \
+	'monitor' \
+	'qmp:unix:$config_dir/sock,server,nowait' \
+	'Redirect the monitor to host device'
+
+parameter \
+	'qemu_graphic' \
+	'one' \
+	'graphic' \
+	'graphic' \
+	'false' \
+	'Disables graphical output'
+
+parameter \
+	'qemu_disk' \
+	'list' \
+	'disk' \
+	'' \
+	'' \
+	'Defines which disk image to use with this drive'
+
+parameter \
+	'qemu_virtfs' \
+	'list' \
+	'virtfs' \
+	'' \
+	'' \
+	'Specifies the export path for the file system device'
