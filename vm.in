@@ -6,7 +6,7 @@
 . shell-cmdline
 . shell-git-config
 
-config_dir="${VM_CONFIG_DIR:-$HOME/.vm}"
+vm_config_dir="${VM_CONFIG_DIR:-$HOME/.vm}"
 
 . "@PREFIX@/vm-options"
 
@@ -68,7 +68,7 @@ run_command() {
 }
 
 vm_profile=
-config_file=
+vm_config_file=
 get_param_one() {
 	local retv name default value=
 	retv="$1";    shift
@@ -76,14 +76,14 @@ get_param_one() {
 	default="$1"; shift
 
 	if [ -n "$vm_profile" ]; then
-		git_config_get value "$config_file" "vm.$vm_profile.$name"
+		git_config_get value "$vm_config_file" "vm.$vm_profile.$name"
 		if [ -n "$value" ]; then
 			eval "$retv=\"\$value\""
 			return 0
 		fi
 	fi
 
-	git_config_get value "$config_file" "vm.$name"
+	git_config_get value "$vm_config_file" "vm.$name"
 	if [ -n "$value" ]; then
 		eval "export $retv=\"\$value\""
 		return 0
@@ -100,7 +100,7 @@ get_param_list() {
 	default="$1"; shift
 
 	if [ -n "$vm_profile" ]; then
-		git_config_count num "$config_file" "vm.$vm_profile.$name"
+		git_config_count num "$vm_config_file" "vm.$vm_profile.$name"
 
 		if [ "$num" -eq 0 ]; then
 			eval "export $retv=0"
@@ -114,13 +114,13 @@ get_param_list() {
 			eval "export ${retv}_$i=\"\$l\""
 			i=$(($i+1))
 		done <<-EOF
-		`git_config_list "$config_file" "vm.$vm_profile.$name"`
+		`git_config_list "$vm_config_file" "vm.$vm_profile.$name"`
 		EOF
 
 		return 0
 	fi
 
-	git_config_count num "$config_file" "vm.$name"
+	git_config_count num "$vm_config_file" "vm.$name"
 
 	if [ "$num" -eq 0 ]; then
 		eval "export $retv=0"
@@ -133,7 +133,7 @@ get_param_list() {
 		eval "export ${retv}_$i=\"\$l\""
 		i=$(($i+1))
 	done <<-EOF
-	`git_config_list "$config_file" "vm.$name"`
+	`git_config_list "$vm_config_file" "vm.$name"`
 	EOF
 
 	return 0
@@ -436,12 +436,13 @@ case "$command" in
 		;;
 esac
 
-config_file="$config_dir/config"
-[ -s "$config_file" ] ||
+vm_config_file="$vm_config_dir/config"
+[ -s "$vm_config_file" ] ||
 	fatal "Config file not found"
-verbose "Config file: $config_file"
 
-git_config_location_exists "$config_file" "vm.$vm_profile" ||
+verbose "Config file: $vm_config_file"
+
+git_config_location_exists "$vm_config_file" "vm.$vm_profile" ||
 	fatal "Profile not exists: vm.$vm_profile"
 
 read_config
@@ -449,5 +450,6 @@ read_config
 process_params
 
 export qemu_exec qemu_args qemu_cmdline vm_params vm_dryrun vm_profile
+export vm_config_dir vm_config_file
 
 run_command "@PREFIX@/vm-command-$command" "$@"
