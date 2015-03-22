@@ -1,0 +1,32 @@
+#!/bin/sh -efu
+
+. shell-error
+. shell-git-config
+
+dest_dir="$vm_config_dir/rootfs/$vm_profile"
+
+git_config_location_exists "$vm_config_file" "vm.$vm_profile" ||
+	verbose "Profile does not exist. Creating ..."
+
+git_config_set "$vm_config_file" "vm.$vm_profile.rootfs" "$dest_dir"
+
+if [ -d "$dest_dir" ]; then
+	verbose "Rootfs already exists for '$vm_profile' profile"
+	exit 0
+fi
+
+verbose "Creating rootfs ..."
+
+mkdir ${verbose-} -p -- "$dest_dir"
+cd "$dest_dir"
+
+for n in dev etc home host proc root sys tmp var var/lib virt virt/home; do
+	mkdir ${verbose-} -p -- "./$n"
+done
+
+for n in bin lib lib64 sbin usr etc/ld.so.conf; do
+	[ ! -e "/$n" ] ||
+		ln ${verbose-} -s -- "/host/$n" "./$n"
+done
+
+printf 'root:x:0:0:root:/root:/bin/sh\n' > ./etc/passwd

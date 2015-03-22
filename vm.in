@@ -428,28 +428,29 @@ done
 command="$1"; shift
 vm_profile="$1"; shift
 
-case "$command" in
-	debug|run|sandbox)
-		;;
-	*)
-		show_usage "Command unknown: $command"
-		;;
-esac
-
 vm_config_file="$vm_config_dir/config"
 [ -s "$vm_config_file" ] ||
 	fatal "Config file not found"
 
 verbose "Config file: $vm_config_file"
 
-git_config_location_exists "$vm_config_file" "vm.$vm_profile" ||
-	fatal "Profile not exists: vm.$vm_profile"
+case "$command" in
+	debug|run|sandbox)
+		git_config_location_exists "$vm_config_file" "vm.$vm_profile" ||
+			fatal "Profile not exists: vm.$vm_profile"
 
-read_config
+		read_config
 
-process_params
+		process_params
+		;;
+	setup)
+		;;
+	*)
+		show_usage "Command unknown: $command"
+		;;
+esac
 
 export qemu_exec qemu_args qemu_cmdline vm_params vm_dryrun vm_profile
-export vm_config_dir vm_config_file
+export vm_config_dir vm_config_file verbose
 
 run_command "@PREFIX@/vm-command-$command" "$@"
