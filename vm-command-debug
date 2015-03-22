@@ -1,0 +1,40 @@
+#!/bin/sh -efu
+
+printf 'Profile: vm.%s\n' "$vm_profile"
+printf 'Configuration:\n'
+for n in $vm_params; do
+	eval "t=\"\${${n}_type-}\""
+	eval "v=\"\${${n}-}\""
+
+	if [ "$t" = one ]; then
+		printf -- '- %s: %s\n' "$n" "$v"
+	fi
+
+	if [ "$t" = list ]; then
+		s='(empty list)'
+		[ $v -eq 0 ] || s=
+		printf -- '- %s: %s\n' "$n" "$s"
+		i=0
+		while [ $i -lt "${v:-0}" ]; do
+			eval "vv=\"\${${n}_$i-}\""
+			printf -- '  + %s\n' "$vv"
+			i=$(($i+1))
+		done
+	fi
+done
+printf '\n'
+
+printf 'Command to execute:\n'
+printf '%s \\\n' "$qemu_exec"
+opt=
+for a in $qemu_args ${qemu_cmdline:+-append "$qemu_cmdline"}; do
+	if [ -z "${a##-*}" ]; then
+		[ -z "$opt" ] || printf '\\\n'
+		printf '\t%s ' "$a"
+		opt=1
+	else
+		printf '"%s" \\\n' "$a"
+		opt=
+	fi
+done
+printf '\t#\n'

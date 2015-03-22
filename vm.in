@@ -16,7 +16,8 @@ Usage: $PROG [options] <command> <profile>
 
 Commands:
 
-run
+run   - starts virtual machine;
+debug - shows the configuration and the command to be executed;
 
 Options:
 EOF
@@ -428,7 +429,7 @@ command="$1"; shift
 vm_profile="$1"; shift
 
 case "$command" in
-	run|sandbox)
+	debug|run|sandbox)
 		;;
 	*)
 		show_usage "Command unknown: $command"
