@@ -3,19 +3,52 @@
 . shell-error
 . shell-git-config
 
-dest_dir="$vm_config_dir/rootfs/$vm_profile"
+show_usage() {
+	cat <<EOF
+Usage: $PROG [options]
+
+Options:
+  -g, --global=DIR    creates global rootfs;
+EOF
+	exit 0
+}
+
+TEMP=`getopt -n $PROG -o 'g:' -l 'global:' -- "$@"` ||
+	show_usage
+eval set -- "$TEMP"
+
+global=
+while :; do
+	case "$1" in
+		-g|--global) shift
+			global="$1"
+			;;
+		--) shift; break
+			;;
+	esac
+	shift
+done
+
+if [ -n "$global" ]; then
+	verbose "Setup global rootfs."
+	dest_dir="$global"
+else
+	dest_dir="$vm_config_dir/rootfs/$vm_profile"
+fi
 
 git_config_location_exists "$vm_config_file" "vm.$vm_profile" ||
 	verbose "Profile does not exist. Creating ..."
 
 git_config_set "$vm_config_file" "vm.$vm_profile.rootfs" "$dest_dir"
+git_config_set "$vm_config_file" "vm.$vm_profile.virtfs" "$dest_dir:/dev/root"
+git_config_set "$vm_config_file" "vm.$vm_profile.append" "root=/dev/root rootflags=rw,trans=virtio,version=9p2000.L,setuid=0 rootfstype=9p rw"
 
 if [ -d "$dest_dir" ]; then
-	verbose "Rootfs already exists for '$vm_profile' profile"
+	verbose "Rootfs already exists: $dest_dir"
 	exit 0
 fi
 
-verbose "Creating rootfs ..."
+verbose "Creating rootfs: $dest_dir"
 
 mkdir ${verbose-} -p -- "$dest_dir"
 cd "$dest_dir"

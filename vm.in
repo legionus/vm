@@ -4,6 +4,7 @@
 . shell-var
 . shell-quote
 . shell-cmdline
+. shell-getopt
 . shell-git-config
 
 vm_config_dir="${VM_CONFIG_DIR:-$HOME/.vm}"
@@ -12,7 +13,7 @@ vm_config_dir="${VM_CONFIG_DIR:-$HOME/.vm}"
 
 show_help() {
 	cat <<EOF
-Usage: $PROG [options] <command> <profile>
+Usage: $PROG [options] <command> <profile> [command-options]
 
 Commands:
 
@@ -322,7 +323,7 @@ process_qemu_disk() {
 process_qemu_virtfs() {
 	[ -n "$qemu_virtfs" ] ||
 		return 0
-	local q_p q_t q_v v i=0 devroot=
+	local q_p q_t q_v v i=0
 	while [ $i -lt $qemu_virtfs ]; do
 		eval "v=\"\$qemu_virtfs_$i\""
 
@@ -340,17 +341,8 @@ process_qemu_virtfs() {
 			qemu_args="$qemu_args -virtfs $v"
 		fi
 
-		[ "$q_t" != '/dev/root' ] || devroot=1
-
 		i=$(($i + 1))
 	done
-
-	#if [ -n "$devroot" ]; then
-	#	append_cmdline root /dev/root
-	#	append_cmdline rootflags rw,trans=virtio,version=9p2000.L,setuid=0
-	#	append_cmdline rootfstype 9p
-	#	append_cmdline rw
-	#fi
 }
 
 set_cmdline_variable() {
@@ -396,6 +388,7 @@ process_params() {
 	done
 }
 
+GETOPT_ALLOW_UNKNOWN=1
 TEMP=`generate_getopt_args; getopt -n $PROG -o 'h,v,V' -l "${getopt_args}dry-run,help,verbose,version" -- "$@"` ||
 	show_usage
 eval set -- "$TEMP"
