@@ -40,8 +40,9 @@ git_config_location_exists "$vm_config_file" "vm.$vm_profile" ||
 	verbose "Profile does not exist. Creating ..."
 
 git_config_set "$vm_config_file" "vm.$vm_profile.rootfs" "$dest_dir"
-git_config_set "$vm_config_file" "vm.$vm_profile.append" "root=/dev/root rootflags=rw,trans=virtio,version=9p2000.L,setuid=0 rootfstype=9p rw"
+git_config_set "$vm_config_file" "vm.$vm_profile.append" "init=virt/init root=/dev/root rootflags=rw,trans=virtio,version=9p2000.L,setuid=0 rootfstype=9p rw"
 
+git_config_unset  "$vm_config_file" "vm.$vm_profile.virtfs"
 git_config_append "$vm_config_file" "vm.$vm_profile.virtfs" "$dest_dir:/dev/root"
 git_config_append "$vm_config_file" "vm.$vm_profile.virtfs" "/:hostfs"
 
@@ -65,3 +66,6 @@ for n in bin lib lib64 sbin usr etc/ld.so.conf; do
 done
 
 printf 'root:x:0:0:root:/root:/bin/sh\n' > ./etc/passwd
+printf 'root:x:0:\n' > ./etc/group
+
+cp ${verbose-} -- "@LIBEXECDIR@/init" ./virt/init
