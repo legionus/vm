@@ -1,3 +1,24 @@
 #!/bin/sh -efu
 
-echo "COMING SOON"
+. shell-error
+. shell-quote
+. shell-git-config
+
+rootfs=
+git_config_get rootfs "$vm_config_file" "vm.$vm_profile.rootfs"
+
+[ -d "$rootfs" ] ||
+	fatal "Rootfs not found"
+
+[ "$#" -gt 0 ] ||
+	set -- /bin/bash
+
+{
+	printf '#!/bin/sh\n'
+	printf 'exec'
+	printf ' "%s"' "$@"
+	printf '\n'
+} > "$rootfs/virt/sandbox.sh"
+chmod +x -- "$rootfs/virt/sandbox.sh"
+
+exec "@PREFIX@/vm-command-run"
