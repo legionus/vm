@@ -66,6 +66,7 @@ install: $(TARGETS)
 	$(MKDIR_P) -- $(DESTDIR)$(libexecdir)
 	$(INSTALL) -p -m755 $(BIN_HELPERS) $(DESTDIR)$(libexecdir)/
 	$(MKDIR_P) -- $(DESTDIR)$(prefix)
+	$(INSTALL) -p -m644 vm-options $(DESTDIR)$(prefix)/
 	$(INSTALL) -p -m755 $(HELPERS) $(DESTDIR)$(prefix)/
 	$(MKDIR_P) -- $(DESTDIR)$(bindir)
 	$(INSTALL) -p -m755 $(PROGRAMS) $(DESTDIR)$(bindir)/
