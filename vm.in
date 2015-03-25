@@ -68,76 +68,72 @@ run_command() {
 	"$@"
 }
 
+config_params_list=
+exit_handler() {
+	[ ! -f "$config_params_list" ] ||
+		rm -f -- "$config_params_list"
+}
+
 vm_profile=
 vm_config_file=
 get_param_one() {
-	local retv name default value=
+	local retv name default value= common_value= profile_value=
+	local conf_name conf_value
+
 	retv="$1";    shift
 	name="$1";    shift
 	default="$1"; shift
 
-	if [ -n "$vm_profile" ]; then
-		git_config_get value "$vm_config_file" "vm.$vm_profile.$name"
-		if [ -n "$value" ]; then
-			eval "$retv=\"\$value\""
-			return 0
-		fi
-	fi
+	while IFS='	' read conf_name conf_value; do
+		[ "$conf_name" != "vm.$vm_profile.$name" ] ||
+			profile_value="$conf_value"
+		[ "$conf_name" != "vm.$name" ] ||
+			common_value="$conf_value"
+	done < "$config_params_list"
 
-	git_config_get value "$vm_config_file" "vm.$name"
-	if [ -n "$value" ]; then
-		eval "export $retv=\"\$value\""
-		return 0
-	fi
+	value="$profile_value"
+	value="${value:-$common_value}"
+	value="${value:-$default}"
 
-	eval "export $retv=\"\$default\""
-	return 1
+	eval "export $retv=\"\$value\""
 }
 
 get_param_list() {
-	local retv name default i num value=
-	retv="$1";    shift
-	name="$1";    shift
-	default="$1"; shift
+	local retv name i=0
+	local conf_name conf_value
 
-	if [ -n "$vm_profile" ]; then
-		git_config_count num "$vm_config_file" "vm.$vm_profile.$name"
+	retv="$1"; shift
+	name="$1"; shift
 
-		if [ "$num" -eq 0 ]; then
-			eval "export $retv=0"
-			return 1
-		fi
-
-		eval "export $retv=\"\$num\""
-
-		i=0
-		while read l; do
-			eval "export ${retv}_$i=\"\$l\""
-			i=$(($i+1))
-		done <<-EOF
-		`git_config_list "$vm_config_file" "vm.$vm_profile.$name"`
-		EOF
-
-		return 0
-	fi
-
-	git_config_count num "$vm_config_file" "vm.$name"
-
-	if [ "$num" -eq 0 ]; then
-		eval "export $retv=0"
-		return 1
-	fi
-
-	eval "export $retv=\"\$num\""
-	i=0
-	while read l; do
-		eval "export ${retv}_$i=\"\$l\""
+	while IFS='	' read conf_name conf_value; do
+		[ "$conf_name" = "vm.$vm_profile.$name" ] ||
+			continue
+		eval "export ${retv}_$i=\"\$conf_value\""
 		i=$(($i+1))
-	done <<-EOF
-	`git_config_list "$vm_config_file" "vm.$name"`
-	EOF
+	done < "$config_params_list"
 
-	return 0
+	eval "export $retv=\"\$i\""
+}
+
+read_config() {
+	local n t f c d
+
+	git_config_parse "$vm_config_file" > "$config_params_list"
+
+	for n in $vm_params; do
+		eval "[ -z \"\${$n-}\" ] || continue"
+		eval "t=\"\$${n}_type\""
+		eval "c=\"\${${n}_cfgname-}\""
+		eval "d=\"\${${n}_default-}\""
+
+		[ -n "$c" ] ||
+			continue
+
+		[ "$t" = 'one' -o "$t" = 'list' ] ||
+			fatal "Unknown value: $t"
+
+		"get_param_$t" "$n" "$c" "$d"
+	done
 }
 
 qemu_cmdline=
@@ -356,30 +352,6 @@ set_cmdline_variable() {
 	done
 }
 
-read_config() {
-	local n t f c d
-
-	for n in $vm_params; do
-		eval "[ -z \"\${$n-}\" ] || continue"
-		eval "t=\"\$${n}_type\""
-		eval "c=\"\${${n}_cfgname-}\""
-		eval "d=\"\${${n}_default-}\""
-
-		[ -n "$c" ] ||
-			continue
-
-		case "$t" in
-			one|list)
-				;;
-			*)
-				fatal "Unknown value: $t"
-				;;
-		esac
-
-		"get_param_$t" "$n" "$c" "$d" ||:
-	done
-}
-
 qemu_args=
 process_params() {
 	local name
@@ -432,8 +404,10 @@ case "$command" in
 		git_config_location_exists "$vm_config_file" "vm.$vm_profile" ||
 			fatal "Profile not exists: vm.$vm_profile"
 
-		read_config
+		config_params_list="$(mktemp -t "$PROG.XXXXXXXXX")"
+		trap exit_handler HUP INT QUIT TERM EXIT
 
+		read_config
 		process_params
 		;;
 	setup)
