@@ -235,14 +235,27 @@ process_qemu_monitor() {
 process_qemu_network() {
 	[ -n "$qemu_network" ] ||
 		return 0
+
+	local nettype= netopts=
+
 	case "$qemu_network" in
 		none)
-			qemu_args="$qemu_args -net none"
+			nettype="none"
+			;;
+		user|user,*)
+			nettype="user"
+			netopts="${qemu_network#user}"
+			;;
+		dump|dump,*)
+			nettype="dump"
+			netopts="${qemu_network#dump}"
 			;;
 		*)
-			fatal "TODO: network"
+			fatal "Unknown network type"
 			;;
 	esac
+
+	qemu_args="$qemu_args -net $nettype${netopts:+$netopts}"
 }
 
 process_qemu_kernel() {
