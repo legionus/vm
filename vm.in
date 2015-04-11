@@ -125,6 +125,7 @@ read_config() {
 		eval "t=\"\$${n}_type\""
 		eval "c=\"\${${n}_cfgname-}\""
 		eval "d=\"\${${n}_default-}\""
+		eval "d=\"$d\""
 
 		[ -n "$c" ] ||
 			continue

@@ -152,7 +152,7 @@ parameter \
 	'one' \
 	'monitor' \
 	'monitor' \
-	'qmp:unix:$vm_config_dir/sock,server,nowait' \
+	'qmp:unix:$vm_config_dir/sock-\$vm_profile,server,nowait' \
 	'Redirect the monitor to host device'
 
 parameter \
