@@ -1,39 +1,7 @@
 #!/bin/sh -efu
 
-vm_params=' '
-
-getopt_args=
-generate_getopt_args() {
-	local n c
-	for n in $vm_params; do
-		eval "c=\"\${${n}_cmdline-}\""
-		[ -z "$c" ] ||
-			getopt_args="$getopt_args$c:,"
-	done
-}
-
-parameter() {
-	local vartype varname cfgname cmdline default description
-
-	varname="$1"; shift
-	vartype="$1"; shift
-	cfgname="$1"; shift
-	cmdline="$1"; shift
-	default="$1"; shift
-	description="$1"; shift
-
-	vm_params="$vm_params$varname "
-
-	[ -z "$cmdline" ] ||
-		eval "export ${varname}_cmdline=\"\$cmdline\""
-
-	[ -z "$cfgname" ] ||
-		eval "export ${varname}_cfgname=\"\$cfgname\""
-
-	eval "export ${varname}_default=\"$default\""
-	eval "export ${varname}_type=\"\$vartype\""
-	eval "export ${varname}_description=\"\$description\""
-}
+if [ -z "${__include_vm_options-}" ]; then
+__include_vm_options=1
 
 parameter \
 	'qemu_machine' \
@@ -178,3 +146,4 @@ parameter \
 	'' \
 	'' \
 	'Specifies the export path for the file system device'
+fi

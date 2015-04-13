@@ -9,6 +9,7 @@
 
 vm_config_dir="${VM_CONFIG_DIR:-$HOME/.vm}"
 
+. "@PREFIX@/vm-sh-functions"
 . "@PREFIX@/vm-options"
 
 show_help() {
