@@ -1,16 +1,9 @@
 #!/bin/sh -efu
 
 . shell-args
-. shell-var
-. shell-quote
-. shell-cmdline
 . shell-getopt
-. shell-git-config
 
 vm_config_dir="${VM_CONFIG_DIR:-$HOME/.vm}"
-
-. "@PREFIX@/vm-sh-functions"
-. "@PREFIX@/vm-options"
 
 show_help() {
 	cat <<EOF
@@ -64,296 +57,38 @@ print_version() {
 	exit
 }
 
-run_command() {
-	verbose "Executing: $*"
-	"$@"
-}
-
-config_params_list=
-exit_handler() {
-	[ ! -f "$config_params_list" ] ||
-		rm -f -- "$config_params_list"
-}
-
-vm_profile=
-vm_config_file=
-get_param_one() {
-	local retv name default value= common_value= profile_value=
-	local conf_name conf_value
-
-	retv="$1";    shift
-	name="$1";    shift
-	default="$1"; shift
-
-	while IFS='	' read conf_name conf_value; do
-		[ "$conf_name" != "vm.$vm_profile.$name" ] ||
-			profile_value="$conf_value"
-		[ "$conf_name" != "vm.$name" ] ||
-			common_value="$conf_value"
-	done < "$config_params_list"
-
-	value="$profile_value"
-	value="${value:-$common_value}"
-	value="${value:-$default}"
-
-	eval "export $retv=\"\$value\""
-}
-
-get_param_list() {
-	local retv name i=0
-	local conf_name conf_value
-
-	retv="$1"; shift
-	name="$1"; shift
-
-	while IFS='	' read conf_name conf_value; do
-		[ "$conf_name" = "vm.$vm_profile.$name" ] ||
-			continue
-		eval "export ${retv}_$i=\"\$conf_value\""
-		i=$(($i+1))
-	done < "$config_params_list"
-
-	eval "export $retv=\"\$i\""
-}
-
-read_config() {
-	local n t f c d
-
-	git_config_parse "$vm_config_file" > "$config_params_list"
-
+getopt_args=
+generate_getopt_args() {
+	local n c
 	for n in $vm_params; do
-		eval "[ -z \"\${$n-}\" ] || continue"
-		eval "t=\"\$${n}_type\""
-		eval "c=\"\${${n}_cfgname-}\""
-		eval "d=\"\${${n}_default-}\""
-		eval "d=\"$d\""
-
-		[ -n "$c" ] ||
-			continue
-
-		[ "$t" = 'one' -o "$t" = 'list' ] ||
-			fatal "Unknown value: $t"
-
-		"get_param_$t" "$n" "$c" "$d"
+		eval "c=\"\${${n}_cmdline-}\""
+		[ -z "$c" ] ||
+			getopt_args="$getopt_args$c:,"
 	done
 }
 
-qemu_cmdline=
-qemu_cmdline_names=' '
-append_cmdline() {
-	local n="$1" v="${2-}"
-	[ -n "${qemu_cmdline_names##*$n*}" ] ||
-		return 0
-	qemu_cmdline_names="$qemu_cmdline_names$n "
-	qemu_cmdline="${qemu_cmdline:+$qemu_cmdline }$n${v:+=$v}"
-}
+vm_params=' '
+parameter() {
+	local vartype varname cfgname cmdline default description
 
-process_sandbox() {
-	[ -n "$do_sandbox" ] ||
-		return 0
+	varname="$1"; shift
+	vartype="$1"; shift
+	cfgname="$1"; shift
+	cmdline="$1"; shift
+	default="$1"; shift
+	description="$1"; shift
 
-	case "$do_sandbox" in
-		builtin|initrd)
-			;;
-		*)
-			fatal "Unknown value: $do_sandbox"
-			;;
-	esac
-}
+	vm_params="$vm_params$varname "
 
-qemu_exec=
-process_qemu_arch() {
-	qemu_exec="qemu-system-$qemu_arch"
-	"$qemu_exec" -version >/dev/null 2>&1 ||
-		fatal "Unsupported arch: $qemu_arch"
-}
+	[ -z "$cmdline" ] ||
+		eval "export ${varname}_cmdline=\"\$cmdline\""
 
-process_qemu_machine() {
-	[ -n "$qemu_machine" ] ||
-		return 0
-	qemu_args="$qemu_args -machine $qemu_machine"
-}
+	[ -z "$cfgname" ] ||
+		eval "export ${varname}_cfgname=\"\$cfgname\""
 
-process_qemu_cpu() {
-	[ -n "$qemu_cpu" ] ||
-		return 0
-	qemu_args="$qemu_args -cpu $qemu_cpu"
-}
-
-process_qemu_cpus()    {
-	[ -n "$qemu_cpus" ] ||
-		return 0
-	[ -n "${qemu_cpus##*[!0-9]*}" ] ||
-		fatal "Wrong value: $qemu_cpus"
-	qemu_args="$qemu_args -smp $qemu_cpus"
-}
-
-process_qemu_memory()  {
-	[ -n "$qemu_memory" ] ||
-		return 0
-	qemu_args="$qemu_args -m $qemu_memory"
-}
-
-process_qemu_console() {
-	[ -n "$qemu_console" ] ||
-		return 0
-
-	qemu_args="$qemu_args -chardev stdio,mux=on,id=stdio,signal=off"
-	qemu_args="$qemu_args -mon chardev=stdio,mode=readline,default"
-
-	case "$qemu_console" in
-		serial)
-			append_cmdline console ttyS0
-			qemu_args="$qemu_args -device isa-serial,chardev=stdio"
-			;;
-		virtio)
-			append_cmdline console hvc0
-			qemu_args="$qemu_args -device virtio-serial"
-			qemu_args="$qemu_args -device virtconsole,chardev=stdio"
-			;;
-		*)
-			#fatal "BUG: Unknown console type."
-			;;
-	esac
-}
-
-process_qemu_monitor() {
-	[ -n "$qemu_monitor" ] ||
-		return 0
-		
-	case "${qemu_monitor%%:*}" in
-		none)
-			qemu_args="$qemu_args -monitor none"
-			;;
-		qmp)
-			qemu_args="$qemu_args -qmp ${qemu_monitor#qmp:}"
-			;;
-		monitor)
-			qemu_args="$qemu_args -monitor ${qemu_monitor#monitor:}"
-			;;
-	esac
-}
-
-process_qemu_network() {
-	[ -n "$qemu_network" ] ||
-		return 0
-
-	local nettype= netopts=
-
-	case "$qemu_network" in
-		none)
-			nettype="none"
-			;;
-		user|user,*)
-			nettype="user"
-			netopts="${qemu_network#user}"
-			;;
-		dump|dump,*)
-			nettype="dump"
-			netopts="${qemu_network#dump}"
-			;;
-		*)
-			fatal "Unknown network type"
-			;;
-	esac
-
-	qemu_args="$qemu_args -net $nettype${netopts:+$netopts}"
-}
-
-process_qemu_kernel() {
-	[ -n "$qemu_kernel" ] ||
-		return 0
-	qemu_args="$qemu_args -kernel $qemu_kernel"
-}
-
-process_qemu_initrd() {
-	[ -n "$qemu_initrd" ] ||
-		return 0
-	[ -n "$qemu_kernel" ] ||
-		fatal "kernel required"
-	qemu_args="$qemu_args -initrd $qemu_initrd"
-}
-
-process_qemu_append() {
-	[ -n "$qemu_append" ] ||
-		return 0
-	[ -n "$qemu_kernel" ] ||
-		fatal "kernel required"
-	cmdline_foreach "$qemu_append" append_cmdline
-}
-
-process_qemu_addappend() {
-	[ -n "$qemu_addappend" ] ||
-		return 0
-	[ -n "$qemu_kernel" ] ||
-		fatal "kernel required"
-	cmdline_foreach "$qemu_addappend" append_cmdline
-}
-
-process_qemu_balloon() {
-	[ -n "$qemu_balloon" ] ||
-		return 0
-	! shell_var_is_yes "$qemu_balloon" ||
-		qemu_args="$qemu_args -balloon virtio"
-}
-
-process_qemu_kvm() {
-	[ -n "$qemu_kvm" ] ||
-		return 0
-	! shell_var_is_yes "$qemu_kvm" ||
-		qemu_args="$qemu_args -enable-kvm"
-}
-
-process_qemu_reboot() {
-	[ -n "$qemu_reboot" ] ||
-		return 0
-	! shell_var_is_no "$qemu_reboot" ||
-		qemu_args="$qemu_args -no-reboot"
-}
-
-process_qemu_graphic() {
-	[ -n "$qemu_graphic" ] ||
-		return 0
-	! shell_var_is_no "$qemu_graphic" ||
-		qemu_args="$qemu_args -nographic"
-}
-
-process_qemu_disk() {
-	[ -n "$qemu_disk" ] ||
-		return 0
-	local v i=0
-	while [ $i -lt $qemu_disk ]; do
-		eval "v=\"\$qemu_disk_$i\""
-		[ -n "${v##*[!,],[!,]*}" ] &&
-			qemu_args="$qemu_args -drive file=$v,if=virtio,cache=writeback" ||
-			qemu_args="$qemu_args -drive $v"
-		i=$(($i + 1))
-	done
-}
-
-process_qemu_virtfs() {
-	[ -n "$qemu_virtfs" ] ||
-		return 0
-	local q_p q_t q_v v i=0
-	while [ $i -lt $qemu_virtfs ]; do
-		eval "v=\"\$qemu_virtfs_$i\""
-
-		if [ -n "${v##*[!,],[!,]*}" ]; then
-			quote_shell_variable q_p "${v%%:*}"
-			quote_shell_variable q_t "${v#*:}"
-
-			# Broken: http://patchwork.ozlabs.org/patch/127551/
-			# qemu_args="$qemu_args -virtfs local,id=virtfs-$i,path=$q_p,security_model=none,mount_tag=$q_t"
-
-			qemu_args="$qemu_args -fsdev local,id=virtfs-$i,path=$q_p,security_model=none"
-			qemu_args="$qemu_args -device virtio-9p-pci,fsdev=virtfs-$i,mount_tag=$q_t"
-		else
-			quote_shell_variable q_v "$v"
-			qemu_args="$qemu_args -virtfs $v"
-		fi
-
-		i=$(($i + 1))
-	done
+	eval "export ${varname}_default=\"$default\""
+	eval "export ${varname}_type=\"\$vartype\""
+	eval "export ${varname}_description=\"\$description\""
 }
 
 set_cmdline_variable() {
@@ -367,13 +102,14 @@ set_cmdline_variable() {
 	done
 }
 
-qemu_args=
-process_params() {
-	local name
-	for name in $vm_params; do
-		"process_$name"
-	done
+workdir=
+exit_handler() {
+	[ ! -d "$workdir" ] ||
+		rm -rf -- "$workdir"
 }
+
+. "@PREFIX@/vm-options"
+
 
 GETOPT_ALLOW_UNKNOWN=1
 TEMP=`generate_getopt_args; getopt -n $PROG -o 'h,v,V' -l "${getopt_args}dry-run,help,verbose,version" -- "$@"` ||
@@ -408,31 +144,32 @@ done
 command="$1"; shift
 vm_profile="$1"; shift
 
+[ -x "@PREFIX@/vm-command-$command" ] ||
+		show_usage "Command unknown: $command"
+
+if [ ! -d "$vm_config_dir" ]; then
+	verbose "Home directory not found. Creating..."
+	mkdir $verbose -p -- \
+		"$vm_config_dir/rootfs" \
+		"$vm_config_dir/socket" \
+		#
+	:> "$vm_config_dir/config"
+fi
+
 vm_config_file="$vm_config_dir/config"
 [ -s "$vm_config_file" ] ||
 	fatal "Config file not found"
 
 verbose "Config file: $vm_config_file"
 
-case "$command" in
-	debug|run|sandbox)
-		git_config_location_exists "$vm_config_file" "vm.$vm_profile" ||
-			fatal "Profile not exists: vm.$vm_profile"
+cwddir="$(readlink -ev .)"
+workdir="$(mktemp -dt "$PROG.XXXXXXXXX")"
+trap exit_handler HUP INT QUIT TERM EXIT
 
-		config_params_list="$(mktemp -t "$PROG.XXXXXXXXX")"
-		trap exit_handler HUP INT QUIT TERM EXIT
+cd "$workdir"
 
-		read_config
-		process_params
-		;;
-	setup)
-		;;
-	*)
-		show_usage "Command unknown: $command"
-		;;
-esac
+export vm_params vm_dryrun vm_profile
+export vm_config_dir vm_config_file
+export verbose workdir cwddir
 
-export qemu_exec qemu_args qemu_cmdline vm_params vm_dryrun vm_profile
-export vm_config_dir vm_config_file verbose
-
-run_command "@PREFIX@/vm-command-$command" "$@"
+"@PREFIX@/vm-command-$command" "$@"
