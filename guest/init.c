@@ -199,7 +199,7 @@ mmap_module(const char *filename, size_t *image_size_p)
 		return NULL;
 	}
 
-	image_size = st.st_size;
+	image_size = (size_t) st.st_size;
 
 	if ((image = mmap(NULL, image_size, PROT_READ, MAP_PRIVATE, fd, 0)) == MAP_FAILED) {
 		perror("mmap");
