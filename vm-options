@@ -132,6 +132,14 @@ parameter \
 	'Disables graphical output'
 
 parameter \
+	'qemu_logfile' \
+	'one' \
+	'logfile' \
+	'' \
+	'' \
+	'Specifies the log filename'
+
+parameter \
 	'qemu_disk' \
 	'list' \
 	'disk' \

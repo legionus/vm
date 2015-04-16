@@ -26,7 +26,7 @@ _get_param_one() {
 	value="${value:-$common_value}"
 	value="${value:-$default}"
 
-	eval "export $retv=\"\$value\""
+	eval "export $retv=\"$value\""
 }
 
 _get_param_list() {
@@ -56,7 +56,6 @@ _parse_config() {
 		eval "t=\"\$${n}_type\""
 		eval "c=\"\${${n}_cfgname-}\""
 		eval "d=\"\${${n}_default-}\""
-		eval "d=\"$d\""
 
 		[ -n "$c" ] ||
 			continue
@@ -112,6 +111,8 @@ _process_qemu_memory()  {
 }
 
 _process_qemu_console() {
+	[ -z "$qemu_logfile" ] ||
+		return 0
 	[ -n "$qemu_console" ] ||
 		return 0
 
@@ -134,10 +135,19 @@ _process_qemu_console() {
 	esac
 }
 
+_process_qemu_logfile() {
+	[ -n "$qemu_logfile" ] ||
+		return 0
+
+	_append_cmdline console ttyS0
+	qemu_args="$qemu_args -chardev file,id=log,path=$qemu_logfile"
+	qemu_args="$qemu_args -device isa-serial,chardev=log"
+}
+
 _process_qemu_monitor() {
 	[ -n "$qemu_monitor" ] ||
 		return 0
-		
+
 	case "${qemu_monitor%%:*}" in
 		none)
 			qemu_args="$qemu_args -monitor none"
