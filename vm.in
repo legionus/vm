@@ -96,7 +96,7 @@ set_cmdline_variable() {
 	for n in $vm_params; do
 		eval "c=\"\${${n}_cmdline-}\""
 		if [ "$c" = "$1" ]; then
-			eval "${n}=\"\$2\""
+			eval "export ${n}=\"\$2\""
 			break
 		fi
 	done
