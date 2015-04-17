@@ -153,6 +153,12 @@ do_mounts(void)
 			fprintf(stderr, "mount failed [/dev/pts]: %s\n", strerror(errno));
 		}
 	}
+
+	if (mount("tmpfs",    "/tmp",  "tmpfs",    0UL, NULL)) {
+		if (errno != EBUSY) {
+			fprintf(stderr, "mount failed [/tmp]: %s\n", strerror(errno));
+		}
+	}
 }
 
 static void __attribute__ ((noreturn))
