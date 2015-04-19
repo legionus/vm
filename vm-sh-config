@@ -111,8 +111,6 @@ _process_qemu_memory()  {
 }
 
 _process_qemu_console() {
-	[ -z "$qemu_logfile" ] ||
-		return 0
 	[ -n "$qemu_console" ] ||
 		return 0
 
@@ -136,12 +134,7 @@ _process_qemu_console() {
 }
 
 _process_qemu_logfile() {
-	[ -n "$qemu_logfile" ] ||
-		return 0
-
-	_append_cmdline console ttyS0
-	qemu_args="$qemu_args -chardev file,id=log,path=$qemu_logfile"
-	qemu_args="$qemu_args -device isa-serial,chardev=log"
+	return 0
 }
 
 _process_qemu_monitor() {

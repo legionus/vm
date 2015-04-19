@@ -135,9 +135,9 @@ parameter \
 	'qemu_logfile' \
 	'one' \
 	'logfile' \
+	'logfile' \
 	'' \
-	'' \
-	'Specifies the log filename'
+	'Duplicates all output to the log file'
 
 parameter \
 	'qemu_disk' \
