@@ -238,6 +238,12 @@ _process_qemu_graphic() {
 		qemu_args="$qemu_args -nographic"
 }
 
+_process_qemu_tempdir() {
+	[ -n "$qemu_tempdir" ] ||
+		return 0
+	export TMPDIR="$qemu_tempdir"
+}
+
 _process_qemu_disk() {
 	[ -n "$qemu_disk" ] ||
 		return 0

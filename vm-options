@@ -140,6 +140,14 @@ parameter \
 	'Duplicates all output to the log file'
 
 parameter \
+	'qemu_tempdir' \
+	'one' \
+	'tempdir' \
+	'tempdir' \
+	'$TMPDIR' \
+	'Create a temporary directory'
+
+parameter \
 	'qemu_disk' \
 	'list' \
 	'disk' \
