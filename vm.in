@@ -6,17 +6,36 @@
 vm_config_dir="${VM_CONFIG_DIR:-$HOME/.vm}"
 
 show_help() {
-	cat <<EOF
-Usage: $PROG [options] <command> <profile> [command-options]
+	local n d i m x s
+	set +f
 
-Commands:
+	cat <<-EOF
+	Usage: $PROG [options] <command> [<profile>] [command-options]
 
-run   - starts virtual machine;
-debug - shows the configuration and the command to be executed;
+	The program to run virtual machines and run programs in their
+	virtual environment.
 
-Options:
-EOF
-	local n d i x m
+	Commands:
+
+	EOF
+
+	for cmd in "@PREFIX@/vm-command-"*; do
+		[ -x "$cmd" ] ||
+			break
+
+		[ -n "${cmd##*.in}" ] ||
+			continue
+
+		n="${cmd##*/vm-command-}"
+		m="$(VM_HELP=1 $cmd)"
+
+		printf ' %10s - %s;\n' "$n" "$m"
+	done
+
+	printf '\n'
+	printf 'Options:\n'
+
+	s='               '
 	for n in $vm_params; do
 		eval "m=\"\$${n}_description\""
 		eval "c=\"\${${n}_cmdline-}\""
@@ -26,18 +45,20 @@ EOF
 			continue
 
 		i="${#c}"
-		x='                  '
+		x="$s"
 		while [ $i -gt 0 ]; do
 			x="${x#?}"
 			i=$(($i-1))
 		done
 
-		printf '  --%s%s%s;\n' "$c" "$x" "$m${d:+ (default: '$d')}"
+		printf '  --%s%s%s.\n' "$c" "$x" "$m"
+		[ -z "$d" ] ||
+		printf '    %s%s;\n' "$s" "(default: '$d')"
+		printf '\n'
 	done
 	cat <<EOF
-
-  -V, --version       print program version and exit;
-  -h, --help          show this text and exit.
+  -V, --version    Print program version and exit;
+  -h, --help       Show this text and exit.
 
 Report bugs to author.
 

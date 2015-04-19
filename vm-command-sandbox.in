@@ -7,6 +7,11 @@
 . "@PREFIX@/vm-sh-config"
 . "@PREFIX@/vm-sh-functions"
 
+if [ -n "${VM_HELP-}" ]; then
+	printf 'Runs a command in a sandboxed guest\n'
+	exit 0
+fi
+
 vm_read_profile_config
 
 rootfs=

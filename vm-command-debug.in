@@ -6,6 +6,11 @@
 . "@PREFIX@/vm-sh-config"
 . "@PREFIX@/vm-sh-functions"
 
+if [ -n "${VM_HELP-}" ]; then
+	printf 'Shows the configuration and the command to be executed\n'
+	exit 0
+fi
+
 vm_read_profile_config
 
 printf 'Profile: vm.%s\n' "$vm_profile"

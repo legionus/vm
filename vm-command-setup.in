@@ -3,6 +3,11 @@
 . shell-error
 . shell-git-config
 
+if [ -n "${VM_HELP-}" ]; then
+	printf 'Setup a new sandbox\n'
+	exit 0
+fi
+
 show_usage() {
 	cat <<EOF
 Usage: $PROG [options]

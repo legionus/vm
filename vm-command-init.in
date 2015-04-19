@@ -2,6 +2,11 @@
 
 . shell-error
 
+if [ -n "${VM_HELP-}" ]; then
+	printf 'Initializes a home directory\n'
+	exit 0
+fi
+
 [ -d "$vm_config_dir" ] ||
 	verbose "Home directory not found. Creating..."
 

@@ -6,6 +6,11 @@
 . "@PREFIX@/vm-sh-config"
 . "@PREFIX@/vm-sh-functions"
 
+if [ -n "${VM_HELP-}" ]; then
+	printf 'Starts a virtual machine according to specified profile\n'
+	exit 0
+fi
+
 debug_exec() {
 	printf '%s \\\n' "$1"; shift
 	opt=
