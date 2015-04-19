@@ -35,7 +35,12 @@ HELP2MAN = env -i help2man -N
 MAKEINFO_FLAGS = -D "VERSION $(VERSION)"
 
 PROGRAMS    = vm
-HELPERS     = vm-command-debug vm-command-run vm-command-sandbox vm-command-setup
+HELPERS     = \
+    vm-command-debug \
+    vm-command-init \
+    vm-command-run \
+    vm-command-sandbox \
+    vm-command-setup
 BIN_HELPERS = init
 TARGETS     = $(PROGRAMS) $(HELPERS) $(BIN_HELPERS)
 SUBDIRS     =

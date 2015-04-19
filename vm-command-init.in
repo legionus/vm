@@ -1,0 +1,15 @@
+#!/bin/sh -efu
+
+. shell-error
+
+[ -d "$vm_config_dir" ] ||
+	verbose "Home directory not found. Creating..."
+
+mkdir $verbose -p -- \
+	"$vm_config_dir/rootfs" \
+	"$vm_config_dir/socket" \
+	"$vm_config_dir/tmp" \
+	#
+
+[ -f "$vm_config_file" ] ||
+	:> "$vm_config_file"

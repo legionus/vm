@@ -138,28 +138,20 @@ while :; do
 	shift
 done
 
-[ "$#" -ge 2 ] ||
+[ "$#" -ge 1 ] ||
 	show_usage "More arguments required."
 
 command="$1"; shift
-vm_profile="$1"; shift
+
+vm_profile=
+if [ "$#" -gt 0 ]; then
+	vm_profile="$1"; shift
+fi
 
 [ -x "@PREFIX@/vm-command-$command" ] ||
 		show_usage "Command unknown: $command"
 
-if [ ! -d "$vm_config_dir" ]; then
-	verbose "Home directory not found. Creating..."
-	mkdir $verbose -p -- \
-		"$vm_config_dir/rootfs" \
-		"$vm_config_dir/socket" \
-		#
-	:> "$vm_config_dir/config"
-fi
-
 vm_config_file="$vm_config_dir/config"
-[ -s "$vm_config_file" ] ||
-	fatal "Config file not found"
-
 verbose "Config file: $vm_config_file"
 
 cwddir="$(readlink -ev .)"
