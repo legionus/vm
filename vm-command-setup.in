@@ -29,6 +29,9 @@ while :; do
 	shift
 done
 
+[ -n "$vm_profile" ] ||
+	fatal "Profile name be specified"
+
 if [ -n "$global" ]; then
 	verbose "Setup global rootfs."
 	dest_dir="$global"

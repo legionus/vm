@@ -4,6 +4,7 @@
 . shell-git-config
 
 . "@PREFIX@/vm-sh-config"
+. "@PREFIX@/vm-sh-functions"
 
 debug_exec() {
 	printf '%s \\\n' "$1"; shift
@@ -21,10 +22,7 @@ debug_exec() {
 	printf '\t#\n'
 }
 
-git_config_location_exists "$vm_config_file" "vm.$vm_profile" ||
-	fatal "Profile not exists: vm.$vm_profile"
-
-vm_read_config "$vm_config_file"
+vm_read_profile_config
 
 if [ -n "$qemu_logfile" ]; then
 	buf="$(mktemp "$workdir/qemu.XXXXXX")"
