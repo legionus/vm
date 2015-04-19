@@ -18,15 +18,19 @@ EOF
 	exit 0
 }
 
-TEMP=`getopt -n $PROG -o 'g:' -l 'global:' -- "$@"` ||
+TEMP=`getopt -n $PROG -o 'u,g:' -l 'update,global:' -- "$@"` ||
 	show_usage
 eval set -- "$TEMP"
 
 global=
+update=
 while :; do
 	case "$1" in
 		-g|--global) shift
 			global="$1"
+			;;
+		-u|--update)
+			update=1
 			;;
 		--) shift; break
 			;;
@@ -54,12 +58,14 @@ git_config_unset  "$vm_config_file" "vm.$vm_profile.virtfs"
 git_config_append "$vm_config_file" "vm.$vm_profile.virtfs" "$dest_dir:/dev/root"
 git_config_append "$vm_config_file" "vm.$vm_profile.virtfs" "/:hostfs"
 
-if [ -d "$dest_dir" ]; then
+if [ -z "$update" -a -d "$dest_dir" ]; then
 	verbose "Rootfs already exists: $dest_dir"
 	exit 0
 fi
 
-verbose "Creating rootfs: $dest_dir"
+[ -z "$update" ] &&
+	verbose "Creating rootfs: $dest_dir" ||
+	verbose "Updating rootfs: $dest_dir"
 
 mkdir ${verbose-} -p -- "$dest_dir"
 cd "$dest_dir"
@@ -69,11 +75,13 @@ for n in dev etc home host proc root sys tmp var var/lib virt virt/home; do
 done
 
 for n in bin lib lib64 sbin usr etc/ld.so.conf; do
-	[ ! -e "/$n" ] ||
+	[ ! -e "./$n" ] ||
 		ln ${verbose-} -s -- "/host/$n" "./$n"
 done
 
-printf 'root:x:0:0:root:/root:/bin/sh\n' > ./etc/passwd
-printf 'root:x:0:\n' > ./etc/group
+[ -f ./etc/passwd ] ||
+	printf 'root:x:0:0:root:/root:/bin/sh\n' > ./etc/passwd
+[ -f ./etc/group ] ||
+	printf 'root:x:0:\n' > ./etc/group
 
 cp ${verbose-} -- "@LIBEXECDIR@/init" ./virt/init

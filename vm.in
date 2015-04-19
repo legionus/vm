@@ -170,7 +170,7 @@ if [ "$#" -gt 0 ]; then
 fi
 
 [ -x "@PREFIX@/vm-command-$command" ] ||
-		show_usage "Command unknown: $command"
+	show_usage "Command unknown: $command"
 
 vm_config_file="$vm_config_dir/config"
 verbose "Config file: $vm_config_file"
