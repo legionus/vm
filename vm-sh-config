@@ -183,6 +183,28 @@ _process_qemu_network() {
 _process_qemu_kernel() {
 	[ -n "$qemu_kernel" ] ||
 		return 0
+
+	case "$qemu_kernel" in
+		find,*)
+			local kernel_dir
+			kernel_dir="${qemu_kernel#find,}"
+			qemu_kernel="$(set +f;
+				find "$kernel_dir"/arch/*/boot \
+					-type f -a \
+						\( \
+							-name bzImage -o \
+							-name zImage \
+						\) \
+					-printf '%T@\t%p\n' |
+				sort -r -k1,1 |
+				head -1 |
+				cut -f2-)"
+			;;
+	esac
+
+	[ -f "$qemu_kernel" ] ||
+		fatal "Unable to find kernel"
+
 	qemu_args="$qemu_args -kernel $qemu_kernel"
 }
 
