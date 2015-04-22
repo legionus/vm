@@ -24,4 +24,8 @@ else
 	fatal "kernel file or path required"
 fi
 
-"@PREFIX@/vm-command-sandbox" ${1:+"$@"}
+if [ "$#" -gt 0 ]; then
+	exec "@PREFIX@/vm-command-sandbox" "$@"
+else
+	exec "@PREFIX@/vm-command-run"
+fi
