@@ -1,16 +1,16 @@
 #!/bin/sh -efu
 
+if [ -n "${VM_HELP-}" ]; then
+	printf 'Runs a command in a sandboxed guest\n'
+	exit 0
+fi
+
 . shell-error
 . shell-quote
 . shell-git-config
 
 . "@PREFIX@/vm-sh-config"
 . "@PREFIX@/vm-sh-functions"
-
-if [ -n "${VM_HELP-}" ]; then
-	printf 'Runs a command in a sandboxed guest\n'
-	exit 0
-fi
 
 vm_read_profile_config
 
@@ -34,7 +34,7 @@ git_config_get rootfs "$vm_config_file" "vm.$vm_profile.rootfs"
 chmod +x -- "$rootfs/virt/sandbox.sh"
 
 rc=0
-"@PREFIX@/vm-command-run" || rc=$?
+(. "@PREFIX@/vm-command-run") || rc=$?
 
 rm -f -- "$rootfs/virt/sandbox.sh"
 exit $rc

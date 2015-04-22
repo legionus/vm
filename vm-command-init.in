@@ -1,24 +1,19 @@
 #!/bin/sh -efu
 
-. shell-error
-. shell-git-config
-
 if [ -n "${VM_HELP-}" ]; then
 	printf 'Initializes a home directory\n'
 	exit 0
 fi
 
-[ -d "$vm_config_dir" ] ||
-	verbose "Home directory not found. Creating..."
+. shell-error
+. shell-git-config
 
-mkdir $verbose -p -- \
-	"$vm_config_dir/rootfs" \
-	"$vm_config_dir/socket" \
-	"$vm_config_dir/tmp" \
-	#
+mkdir $verbose -p -- "$HOME/vm"
 
 if [ ! -f "$vm_config_file" ]; then
+	message "Config file: $vm_config_file"
 	:> "$vm_config_file"
 
-	git_config_set "$vm_config_file" "vm.tempdir" "$vm_config_dir/tmp"
+	git_config_set "$vm_config_file" "vm.console" "serial"
+	git_config_set "$vm_config_file" "vm.profiles" "$HOME/vm"
 fi

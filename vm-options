@@ -3,6 +3,14 @@
 if [ -z "${__include_vm_options-}" ]; then
 __include_vm_options=1
 
+. shell-git-config
+
+get_qemu_monitor_default() {
+	local vm_profiles=
+	git_config_get vm_profiles "$vm_config_file" "vm.profiles"
+	printf 'qmp:unix:%s/%s/socket,server,nowait' "$vm_profiles" "$vm_profile"
+}
+
 parameter \
 	'qemu_machine' \
 	'one' \
@@ -80,7 +88,7 @@ parameter \
 	'one' \
 	'append' \
 	'append' \
-	'panic=-1 oops=panic' \
+	'' \
 	'Use cmdline as kernel command line'
 
 parameter \
@@ -120,7 +128,7 @@ parameter \
 	'one' \
 	'monitor' \
 	'monitor' \
-	'qmp:unix:\$vm_config_dir/socket/\$vm_profile,server,nowait' \
+	'\$(get_qemu_monitor_default)' \
 	'Redirect the monitor to host device'
 
 parameter \

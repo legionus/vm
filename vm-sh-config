@@ -1,10 +1,20 @@
 #!/bin/sh -efu
 
+if [ -z "${__include_vm_sh_config-}" ]; then
+__include_vm_sh_config=1
+
 . shell-error
 . shell-var
 . shell-quote
 . shell-cmdline
 . shell-git-config
+
+vm_init_config() {
+	qemu_args=
+	qemu_cmdline=
+	qemu_cmdline_names=' '
+	qemu_exec=
+}
 
 vm_profile="${vm_profile-}"
 _get_param_one() {
@@ -67,8 +77,6 @@ _parse_config() {
 	done
 }
 
-qemu_cmdline=
-qemu_cmdline_names=' '
 _append_cmdline() {
 	local n="$1" v="${2-}"
 	[ -n "${qemu_cmdline_names##*$n*}" ] ||
@@ -77,7 +85,6 @@ _append_cmdline() {
 	qemu_cmdline="${qemu_cmdline:+$qemu_cmdline }$n${v:+=$v}"
 }
 
-qemu_exec=
 _process_qemu_arch() {
 	qemu_exec="qemu-system-$qemu_arch"
 	"$qemu_exec" -version >/dev/null 2>&1 ||
@@ -304,9 +311,9 @@ _process_qemu_virtfs() {
 	done
 }
 
-qemu_args=
 vm_read_config() {
 	local vm_config_file="$1"
+	verbose "Read config: $vm_config_file"
 
 	_parse_config "$vm_config_file"
 
@@ -317,3 +324,5 @@ vm_read_config() {
 
 	export qemu_exec qemu_args qemu_cmdline
 }
+
+fi

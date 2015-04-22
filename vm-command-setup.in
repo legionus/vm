@@ -1,12 +1,12 @@
 #!/bin/sh -efu
 
-. shell-error
-. shell-git-config
-
 if [ -n "${VM_HELP-}" ]; then
 	printf 'Setup a new sandbox\n'
 	exit 0
 fi
+
+. shell-error
+. shell-git-config
 
 show_usage() {
 	cat <<EOF
@@ -18,7 +18,7 @@ EOF
 	exit 0
 }
 
-TEMP=`getopt -n $PROG -o 'u,g:' -l 'update,global:' -- "$@"` ||
+TEMP=`getopt -n $PROG -o 'g:' -l 'global:' -- "$@"` ||
 	show_usage
 eval set -- "$TEMP"
 
@@ -29,9 +29,6 @@ while :; do
 		-g|--global) shift
 			global="$1"
 			;;
-		-u|--update)
-			update=1
-			;;
 		--) shift; break
 			;;
 	esac
@@ -41,31 +38,36 @@ done
 [ -n "$vm_profile" ] ||
 	fatal "Profile name be specified"
 
-if [ -n "$global" ]; then
+if [ -z "$global" ]; then
+	. "@PREFIX@/vm-sh-config"
+	. "@PREFIX@/vm-sh-functions"
+
+	vm_read_common_config
+
+	vm_profiles=
+	git_config_get vm_profiles "$vm_config_file" "vm.profiles"
+
+	dest_dir="$vm_profiles/$vm_profile/rootfs"
+else
 	verbose "Setup global rootfs."
 	dest_dir="$global"
-else
-	dest_dir="$vm_config_dir/rootfs/$vm_profile"
 fi
 
 git_config_location_exists "$vm_config_file" "vm.$vm_profile" ||
 	verbose "Profile does not exist. Creating ..."
 
 git_config_set "$vm_config_file" "vm.$vm_profile.rootfs" "$dest_dir"
+[ -z "${qemu_kernel-}" ] ||
+	git_config_set "$vm_config_file" "vm.$vm_profile.kernel" "$qemu_kernel"
 git_config_set "$vm_config_file" "vm.$vm_profile.append" "init=virt/init root=/dev/root rootflags=rw,trans=virtio,version=9p2000.L,setuid=0 rootfstype=9p rw"
 
 git_config_unset  "$vm_config_file" "vm.$vm_profile.virtfs"
 git_config_append "$vm_config_file" "vm.$vm_profile.virtfs" "$dest_dir:/dev/root"
 git_config_append "$vm_config_file" "vm.$vm_profile.virtfs" "/:hostfs"
 
-if [ -z "$update" -a -d "$dest_dir" ]; then
-	verbose "Rootfs already exists: $dest_dir"
-	exit 0
-fi
-
-[ -z "$update" ] &&
-	verbose "Creating rootfs: $dest_dir" ||
-	verbose "Updating rootfs: $dest_dir"
+[ -d "$dest_dir" ] &&
+	message "Updating rootfs: $dest_dir" ||
+	message "Creating rootfs: $dest_dir"
 
 mkdir ${verbose-} -p -- "$dest_dir"
 cd "$dest_dir"
@@ -75,7 +77,7 @@ for n in dev etc home host proc root sys tmp var var/lib virt virt/home; do
 done
 
 for n in bin lib lib64 sbin usr etc/ld.so.conf; do
-	[ ! -e "./$n" ] ||
+	[ -e "./$n" -o -L "./$n" ] ||
 		ln ${verbose-} -s -- "/host/$n" "./$n"
 done
 

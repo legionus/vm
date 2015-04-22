@@ -3,8 +3,6 @@
 . shell-args
 . shell-getopt
 
-vm_config_dir="${VM_CONFIG_DIR:-$HOME/.vm}"
-
 show_help() {
 	local n d i m x s
 	set +f
@@ -172,7 +170,7 @@ fi
 [ -x "@PREFIX@/vm-command-$command" ] ||
 	show_usage "Command unknown: $command"
 
-vm_config_file="$vm_config_dir/config"
+vm_config_file="${VM_CONFIG:-$HOME/.vmconfig}"
 verbose "Config file: $vm_config_file"
 
 cwddir="$(readlink -ev .)"
@@ -182,7 +180,7 @@ trap exit_handler HUP INT QUIT TERM EXIT
 cd "$workdir"
 
 export vm_params vm_dryrun vm_profile
-export vm_config_dir vm_config_file
+export vm_config_file
 export verbose workdir cwddir
 
-"@PREFIX@/vm-command-$command" "$@"
+. "@PREFIX@/vm-command-$command"

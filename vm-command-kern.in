@@ -1,14 +1,11 @@
 #!/bin/sh -efu
 
-. shell-error
-
-. "@PREFIX@/vm-sh-config"
-. "@PREFIX@/vm-sh-functions"
-
 if [ -n "${VM_HELP-}" ]; then
 	printf 'Runs command with specified kernel\n'
 	exit 0
 fi
+
+. shell-error
 
 [ "$#" -gt 0 ] ||
 	fatal "More arguments required"
@@ -26,8 +23,8 @@ fi
 
 export qemu_kernel
 
-if [ "$#" -gt 0 ]; then
-	exec "@PREFIX@/vm-command-sandbox" "$@"
-else
-	exec "@PREFIX@/vm-command-run"
-fi
+[ "$#" -gt 0 ] &&
+	command="sandbox" ||
+	command="run"
+
+. "@PREFIX@/vm-command-$command"
