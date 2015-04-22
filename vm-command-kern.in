@@ -1,0 +1,27 @@
+#!/bin/sh -efu
+
+. shell-error
+
+. "@PREFIX@/vm-sh-config"
+. "@PREFIX@/vm-sh-functions"
+
+if [ -n "${VM_HELP-}" ]; then
+	printf 'Runs command with specified kernel\n'
+	exit 0
+fi
+
+[ "$#" -gt 0 ] ||
+	fatal "More arguments required"
+
+kernel="$1"
+shift
+
+if [ -d "$kernel" ]; then
+	qemu_kernel="find,$kernel"
+elif [ -f "$kernel" ]; then
+	qemu_kernel="$kernel"
+else
+	fatal "kernel file or path required"
+fi
+
+"@PREFIX@/vm-command-sandbox" ${1:+"$@"}

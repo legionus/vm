@@ -38,6 +38,7 @@ PROGRAMS    = vm
 HELPERS     = \
     vm-command-debug \
     vm-command-init \
+    vm-command-kern \
     vm-command-run \
     vm-command-sandbox \
     vm-command-setup
