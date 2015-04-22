@@ -24,6 +24,8 @@ else
 	fatal "kernel file or path required"
 fi
 
+export qemu_kernel
+
 if [ "$#" -gt 0 ]; then
 	exec "@PREFIX@/vm-command-sandbox" "$@"
 else
