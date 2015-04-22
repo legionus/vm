@@ -121,12 +121,6 @@ set_cmdline_variable() {
 	done
 }
 
-workdir=
-exit_handler() {
-	[ ! -d "$workdir" ] ||
-		rm -rf -- "$workdir"
-}
-
 . "@PREFIX@/vm-options"
 
 
@@ -174,13 +168,9 @@ vm_config_file="${VM_CONFIG:-$HOME/.vmconfig}"
 verbose "Config file: $vm_config_file"
 
 cwddir="$(readlink -ev .)"
-workdir="$(mktemp -dt "$PROG.XXXXXXXXX")"
-trap exit_handler HUP INT QUIT TERM EXIT
-
-cd "$workdir"
 
 export vm_params vm_dryrun vm_profile
 export vm_config_file
-export verbose workdir cwddir
+export verbose cwddir
 
 . "@PREFIX@/vm-command-$command"

@@ -30,7 +30,7 @@ _get_param_one() {
 			profile_value="$conf_value"
 		[ "$conf_name" != "vm.$name" ] ||
 			common_value="$conf_value"
-	done < clist
+	done < "$clist"
 
 	value="$profile_value"
 	value="${value:-$common_value}"
@@ -51,7 +51,7 @@ _get_param_list() {
 			continue
 		eval "export ${retv}_$i=\"\$conf_value\""
 		i=$(($i+1))
-	done < clist
+	done < "$clist"
 
 	eval "export $retv=\"\$i\""
 }
@@ -59,7 +59,10 @@ _get_param_list() {
 _parse_config() {
 	local n t f c d
 
-	git_config_parse "$1" > clist
+	local clist
+	clist="$(mktemp -t "qemu.XXXXXXXXX")"
+
+	git_config_parse "$1" > "$clist"
 
 	for n in $vm_params; do
 		eval "[ -z \"\${$n-}\" ] || continue"

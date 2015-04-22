@@ -27,7 +27,7 @@ debug_exec() {
 vm_read_profile_config
 
 if [ -n "$qemu_logfile" ]; then
-	buf="$(mktemp "$workdir/qemu.XXXXXX")"
+	buf="$(mktemp -t "qemu.XXXXXXXXX")"
 	{
 		rc=0
 		${vm_dryrun:+debug_exec} \
@@ -37,6 +37,7 @@ if [ -n "$qemu_logfile" ]; then
 	} |
 		tee "$qemu_logfile"
 	read rc < "$buf"
+	rm -f -- "$buf"
 	exit $rc
 fi
 
