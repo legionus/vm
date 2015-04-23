@@ -30,8 +30,7 @@ if [ -n "$qemu_logfile" ]; then
 	buf="$(mktemp -t "qemu.XXXXXXXXX")"
 	{
 		rc=0
-		${vm_dryrun:+debug_exec} \
-		$qemu_exec $qemu_args ${qemu_cmdline:+-append "$qemu_cmdline"} ||
+		eval "${vm_dryrun:+debug_exec} $qemu_exec $qemu_args" ||
 			rc=$?
 		printf '%s\n' "$rc" > "$buf"
 	} |
@@ -41,5 +40,4 @@ if [ -n "$qemu_logfile" ]; then
 	exit $rc
 fi
 
-${vm_dryrun:+debug_exec} \
-$qemu_exec $qemu_args ${qemu_cmdline:+-append "$qemu_cmdline"}
+eval "${vm_dryrun:+debug_exec} $qemu_exec $qemu_args"
