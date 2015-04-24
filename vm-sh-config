@@ -276,6 +276,27 @@ _process_qemu_tempdir() {
 	export TMPDIR="$qemu_tempdir"
 }
 
+_process_qemu_watchdog() {
+	[ -n "$qemu_watchdog" ] ||
+		return 0
+
+	local model= action=
+	_parse_qemu_watchdog() {
+		local a
+		for a; do
+			case "$a" in
+				model:*)  model="${a#model:}"   ;;
+				action:*) action="${a#action:}" ;;
+			esac
+		done
+	}
+
+	local IFS=,
+	_parse_qemu_watchdog $qemu_watchdog
+
+	qemu_args="$qemu_args -watchdog '$model' -watchdog-action '$action'"
+}
+
 _process_qemu_disk() {
 	[ -n "$qemu_disk" ] ||
 		return 0

@@ -153,7 +153,15 @@ parameter \
 	'tempdir' \
 	'tempdir' \
 	'$TMPDIR' \
-	'Create a temporary directory'
+	'Creates a temporary directory'
+
+parameter \
+	'qemu_watchdog' \
+	'one' \
+	'watchdog' \
+	'' \
+	'' \
+	'Creates a virtual hardware watchdog device'
 
 parameter \
 	'qemu_disk' \
