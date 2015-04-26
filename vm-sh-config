@@ -49,7 +49,7 @@ _get_param_list() {
 	while IFS='	' read conf_name conf_value; do
 		[ "$conf_name" = "vm.$vm_profile.$name" ] ||
 			continue
-		eval "export ${retv}_$i=\"\$conf_value\""
+		eval "export ${retv}_$i=\"$conf_value\""
 		i=$(($i+1))
 	done < "$clist"
 
