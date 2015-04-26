@@ -5,6 +5,8 @@ if [ -n "${VM_HELP-}" ]; then
 	exit 0
 fi
 
+. shell-git-config
+
 . "@PREFIX@/vm-sh-config"
 . "@PREFIX@/vm-sh-functions"
 
@@ -25,6 +27,12 @@ debug_exec() {
 }
 
 vm_read_profile_config
+
+vm_profiles=
+git_config_get vm_profiles "$vm_config_file" "vm.profiles"
+
+dest_dir="$vm_profiles/$vm_profile"
+mkdir $verbose -p -- "$dest_dir"
 
 if [ -n "$qemu_logfile" ]; then
 	buf="$(mktemp -t "qemu.XXXXXXXXX")"
