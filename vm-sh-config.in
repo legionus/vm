@@ -209,6 +209,14 @@ _process_qemu_kernel() {
 				sort -r -k1,1 |
 				head -1 |
 				cut -f2-)"
+			if [ -s "$kernel_dir/.config" ]; then
+				local result expect
+				result="$(fgrep -f "@PREFIX@/kernel.config" "$kernel_dir/.config" |sort -u)"
+				expect="$(sort -u "@PREFIX@/kernel.config")"
+
+				[ "$result" = "$expect" ] ||
+					error "The kernel configuration most likely not compatible with qemu. Check \`@PREFIX@/kernel.config'."
+			fi
 			;;
 	esac
 

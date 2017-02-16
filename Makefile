@@ -35,7 +35,11 @@ HELP2MAN = env -i help2man -N
 MAKEINFO_FLAGS = -D "VERSION $(VERSION)"
 
 PROGRAMS    = vm
+DATA        = \
+    vm-options \
+    vm-sh-functions
 HELPERS     = \
+	vm-sh-config \
     vm-command-debug \
     vm-command-init \
     vm-command-kern \
@@ -72,7 +76,7 @@ install: $(TARGETS)
 	$(MKDIR_P) -- $(DESTDIR)$(libexecdir)
 	$(INSTALL) -p -m755 $(BIN_HELPERS) $(DESTDIR)$(libexecdir)/
 	$(MKDIR_P) -- $(DESTDIR)$(prefix)
-	$(INSTALL) -p -m644 vm-options $(DESTDIR)$(prefix)/
+	$(INSTALL) -p -m644 $(DATA) $(DESTDIR)$(prefix)/
 	$(INSTALL) -p -m755 $(HELPERS) $(DESTDIR)$(prefix)/
 	$(MKDIR_P) -- $(DESTDIR)$(bindir)
 	$(INSTALL) -p -m755 $(PROGRAMS) $(DESTDIR)$(bindir)/
