@@ -121,13 +121,10 @@ _process_qemu_memory()  {
 }
 
 _process_qemu_console() {
-	[ -n "$qemu_console" ] ||
-		return 0
-
-	qemu_args="$qemu_args -chardev stdio,mux=on,id=stdio,signal=off"
-	qemu_args="$qemu_args -mon chardev=stdio,mode=readline,default"
-
 	case "$qemu_console" in
+		''|none)
+			return 0
+			;;
 		serial)
 			_append_cmdline console ttyS0
 			qemu_args="$qemu_args -device isa-serial,chardev=stdio"
@@ -138,9 +135,12 @@ _process_qemu_console() {
 			qemu_args="$qemu_args -device virtconsole,chardev=stdio"
 			;;
 		*)
-			#fatal "BUG: Unknown console type."
+			fatal "BUG: Unknown console type: $qemu_console"
 			;;
 	esac
+
+	qemu_args="$qemu_args -chardev stdio,mux=on,id=stdio,signal=off"
+	qemu_args="$qemu_args -mon chardev=stdio,mode=readline,default"
 }
 
 _process_qemu_logfile() {
