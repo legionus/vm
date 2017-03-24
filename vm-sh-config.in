@@ -144,6 +144,14 @@ _process_qemu_memory()  {
 	qemu_args="$qemu_args -m '$qemu_memory'"
 }
 
+_process_qemu_boot()  {
+	[ -n "$qemu_boot" ] ||
+		return 0
+	[ -n "${qemu_boot##*[!,],[!,]*}" ] &&
+		qemu_args="$qemu_args -boot 'order=$qemu_boot'" ||
+		qemu_args="$qemu_args -boot '$qemu_boot'"
+}
+
 _process_qemu_console() {
 	case "$qemu_console" in
 		''|none)

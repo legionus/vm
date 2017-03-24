@@ -178,4 +178,12 @@ parameter \
 	'' \
 	'' \
 	'Specifies the export path for the file system device'
+
+parameter \
+	'qemu_boot' \
+	'one' \
+	'boot' \
+	'boot' \
+	'' \
+	'Specifies boot order drives as a string of drive letters'
 fi
