@@ -101,15 +101,15 @@ parameter \
 
 parameter \
 	'qemu_balloon' \
-	'one' \
+	'one_bool' \
 	'balloon' \
 	'balloon' \
-	'none' \
+	'false' \
 	'Enable virtio balloon device'
 
 parameter \
 	'qemu_kvm' \
-	'one' \
+	'one_bool' \
 	'enable-kvm' \
 	'enable-kvm' \
 	'false' \
@@ -117,7 +117,7 @@ parameter \
 
 parameter \
 	'qemu_reboot' \
-	'one' \
+	'one_bool' \
 	'reboot' \
 	'reboot' \
 	'false' \
@@ -133,7 +133,7 @@ parameter \
 
 parameter \
 	'qemu_graphic' \
-	'one' \
+	'one_bool' \
 	'graphic' \
 	'graphic' \
 	'false' \

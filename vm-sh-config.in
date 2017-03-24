@@ -17,11 +17,11 @@ vm_init_config() {
 }
 
 vm_profile="${vm_profile-}"
-_get_param_one() {
-	local retv name default value= common_value= profile_value=
+
+_get_value() {
+	local name default common_value= profile_value=
 	local conf_name conf_value
 
-	retv="$1";    shift
 	name="$1";    shift
 	default="$1"; shift
 
@@ -35,6 +35,25 @@ _get_param_one() {
 	value="$profile_value"
 	value="${value:-$common_value}"
 	value="${value:-$default}"
+}
+
+_get_param_one_bool() {
+	local retv value=
+	retv="$1"; shift
+
+	_get_value "$@"
+
+	shell_var_is_yes "$value" || shell_var_is_no "$value" ||
+		fatal "BUG: Unexpected value for '$1': $value (expected true/false variable)"
+
+	eval "export $retv=\"$value\""
+}
+
+_get_param_one() {
+	local retv value=
+	retv="$1"; shift
+
+	_get_value "$@"
 
 	eval "export $retv=\"$value\""
 }
@@ -73,8 +92,13 @@ _parse_config() {
 		[ -n "$c" ] ||
 			continue
 
-		[ "$t" = 'one' -o "$t" = 'list' ] ||
-			fatal "Unknown value: $t"
+		case "$t" in
+			one|one_bool|list)
+				;;
+			*)
+				fatal "Unknown value type for '$n': $t"
+				;;
+		esac
 
 		"_get_param_$t" "$n" "$c" "$d"
 	done
