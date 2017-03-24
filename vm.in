@@ -34,7 +34,9 @@ show_help() {
 	printf 'Options:\n'
 
 	s='               '
-	for n in $vm_params; do
+	printf '%s\n' $vm_params |
+		sort |
+	while read n; do
 		eval "m=\"\$${n}_description\""
 		eval "c=\"\${${n}_cmdline-}\""
 		eval "d=\"\${${n}_default-}\""
