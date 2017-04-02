@@ -158,11 +158,13 @@ _process_qemu_console() {
 			return 0
 			;;
 		serial)
-			_append_cmdline console ttyS0
+			[ -z "$qemu_kernel" ] ||
+				_append_cmdline console ttyS0
 			qemu_args="$qemu_args -device isa-serial,chardev=stdio"
 			;;
 		virtio)
-			_append_cmdline console hvc0
+			[ -z "$qemu_kernel" ] ||
+				_append_cmdline console hvc0
 			qemu_args="$qemu_args -device virtio-serial"
 			qemu_args="$qemu_args -device virtconsole,chardev=stdio"
 			;;
