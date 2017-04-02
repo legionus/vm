@@ -5,18 +5,15 @@ if [ -n "${VM_HELP-}" ]; then
 	exit 0
 fi
 
+if [ -n "${VM_HELP_OPTIONS-}" ]; then
+	cat <<-EOF
+	  -g, --global=DIR    creates global rootfs;
+	EOF
+	exit 0
+fi
+
 . shell-error
 . shell-git-config
-
-show_usage() {
-	cat <<EOF
-Usage: $PROG [options]
-
-Options:
-  -g, --global=DIR    creates global rootfs;
-EOF
-	exit 0
-}
 
 TEMP=`getopt -n $PROG -o 'g:' -l 'global:' -- "$@"` ||
 	show_usage

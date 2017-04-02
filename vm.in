@@ -30,6 +30,23 @@ show_help() {
 		printf ' %10s - %s;\n' "$n" "$m"
 	done
 
+	for cmd in "@PREFIX@/vm-command-"*; do
+		[ -x "$cmd" ] ||
+			break
+
+		[ -n "${cmd##*.in}" ] ||
+			continue
+
+		n="${cmd##*/vm-command-}"
+		m="$(VM_HELP_OPTIONS=1 $cmd)"
+
+		[ -n "${m:+1}" ] ||
+			continue
+
+		printf '\n'
+		printf 'Command options (%s):\n%s\n' "$n" "$m"
+	done
+
 	printf '\n'
 	printf 'Options:\n'
 
@@ -57,6 +74,8 @@ show_help() {
 		printf '\n'
 	done
 	cat <<EOF
+  --dry-run        Show final qemu command;
+  -v, --verbose    Print a message for each action;
   -V, --version    Print program version and exit;
   -h, --help       Show this text and exit.
 

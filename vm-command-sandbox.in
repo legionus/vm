@@ -5,6 +5,10 @@ if [ -n "${VM_HELP-}" ]; then
 	exit 0
 fi
 
+if [ -n "${VM_HELP_OPTIONS-}" ]; then
+	exit 0
+fi
+
 . shell-error
 . shell-quote
 . shell-git-config
