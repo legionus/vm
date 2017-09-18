@@ -249,7 +249,7 @@ _process_qemu_kernel() {
 				expect="$(sort -u "@PREFIX@/kernel.config")"
 
 				[ "$result" = "$expect" ] ||
-					error "The kernel configuration most likely not compatible with qemu. Check \`@PREFIX@/kernel.config'."
+					fatal "The kernel configuration most likely not compatible with qemu. Check \`@PREFIX@/kernel.config'."
 			fi
 			;;
 	esac
