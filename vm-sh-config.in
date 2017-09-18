@@ -174,7 +174,7 @@ _process_qemu_console() {
 	esac
 
 	qemu_args="$qemu_args -chardev stdio,mux=on,id=stdio,signal=off"
-	qemu_args="$qemu_args -mon chardev=stdio,mode=readline,default"
+	qemu_args="$qemu_args -mon chardev=stdio,mode=readline"
 }
 
 _process_qemu_logfile() {
