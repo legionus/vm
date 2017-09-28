@@ -106,7 +106,7 @@ _parse_config() {
 
 _append_cmdline() {
 	local n="$1" v="${2-}"
-	[ -n "${qemu_cmdline_names##*$n*}" ] ||
+	[ -n "${qemu_cmdline_names##* $n *}" ] ||
 		return 0
 	qemu_cmdline_names="$qemu_cmdline_names$n "
 	qemu_cmdline="${qemu_cmdline:+$qemu_cmdline }$n${v:+=$v}"

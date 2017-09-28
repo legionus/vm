@@ -40,8 +40,9 @@ printf '\n'
 
 printf 'Command to execute:\n'
 printf '%s \\\n' "$qemu_exec"
+eval set -- $qemu_args
 opt=
-for a in $qemu_args ${qemu_cmdline:+-append "$qemu_cmdline"}; do
+for a; do
 	if [ -z "${a##-*}" ]; then
 		[ -z "$opt" ] || printf '\\\n'
 		printf '\t%s ' "$a"
