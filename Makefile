@@ -39,7 +39,7 @@ DATA        = \
     vm-options \
     vm-sh-functions
 HELPERS     = \
-	vm-sh-config \
+    vm-sh-config \
     vm-command-debug \
     vm-command-init \
     vm-command-kern \

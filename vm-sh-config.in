@@ -352,6 +352,17 @@ _process_qemu_disk() {
 	done
 }
 
+_process_qemu_device() {
+	[ -n "$qemu_device" ] ||
+		return 0
+	local v i=0
+	while [ $i -lt $qemu_device ]; do
+		eval "v=\"\$qemu_device_$i\""
+		qemu_args="$qemu_args -device '$v'"
+		i=$(($i + 1))
+	done
+}
+
 _process_qemu_virtfs() {
 	[ -n "$qemu_virtfs" ] ||
 		return 0

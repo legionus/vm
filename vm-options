@@ -172,6 +172,14 @@ parameter \
 	'Defines which disk image to use with this drive'
 
 parameter \
+	'qemu_device' \
+	'list' \
+	'device' \
+	'' \
+	'' \
+	'Adds device driver and sets driver properties'
+
+parameter \
 	'qemu_virtfs' \
 	'list' \
 	'virtfs' \
