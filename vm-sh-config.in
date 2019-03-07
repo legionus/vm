@@ -198,30 +198,40 @@ _process_qemu_monitor() {
 	esac
 }
 
+_network_netdev_id=0
+_object_dump_filter_id=0
+
 _process_qemu_network() {
 	[ -n "$qemu_network" ] ||
 		return 0
 
-	local nettype= netopts=
+	local opts=
 
 	case "$qemu_network" in
 		none)
-			nettype="none"
+			qemu_args="$qemu_args -net none"
 			;;
 		user|user,*)
-			nettype="user"
-			netopts="${qemu_network#user}"
+			opts="${qemu_network#user}"
+			qemu_args="$qemu_args -nic 'user${opts:+$opts}'"
 			;;
 		dump|dump,*)
-			nettype="dump"
-			netopts="${qemu_network#dump}"
+			opts="${qemu_network#dump}"
+
+			qemu_args="$qemu_args -netdev user,id=netdev-${_network_netdev_id}"
+			qemu_args="$qemu_args -device e1000,netdev=netdev-${_network_netdev_id}"
+			qemu_args="$qemu_args -object filter-dump,id=object-filter-dump-${_object_dump_filter_id},netdev=netdev-${_network_netdev_id}${opts:+$opts}"
+
+			_network_netdev_id=$(($_network_netdev_id + 1))
+			_object_dump_filter_id=$(($_object_dump_filter_id + 1))
+			;;
+		netdev,*)
+			qemu_args="$qemu_args -netdev '${qemu_network#netdev,}'"
 			;;
 		*)
 			fatal "Unknown network type"
 			;;
 	esac
-
-	qemu_args="$qemu_args -net '$nettype${netopts:+$netopts}'"
 }
 
 _process_qemu_kernel() {
