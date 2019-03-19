@@ -205,33 +205,41 @@ _process_qemu_network() {
 	[ -n "$qemu_network" ] ||
 		return 0
 
-	local opts=
+	local v i=0
+	while [ $i -lt $qemu_network ]; do
+		eval "v=\"\$qemu_network_$i\""
 
-	case "$qemu_network" in
-		none)
-			qemu_args="$qemu_args -net none"
-			;;
-		user|user,*)
-			opts="${qemu_network#user}"
-			qemu_args="$qemu_args -nic 'user${opts:+$opts}'"
-			;;
-		dump|dump,*)
-			opts="${qemu_network#dump}"
+		local opts=
 
-			qemu_args="$qemu_args -netdev user,id=netdev-${_network_netdev_id}"
-			qemu_args="$qemu_args -device e1000,netdev=netdev-${_network_netdev_id}"
-			qemu_args="$qemu_args -object filter-dump,id=object-filter-dump-${_object_dump_filter_id},netdev=netdev-${_network_netdev_id}${opts:+$opts}"
+		case "$v" in
+			none)
+				qemu_args="$qemu_args -net none"
+				;;
+			user|user,*)
+				opts="${v#user}"
+				qemu_args="$qemu_args -nic 'user${opts:+$opts}'"
+				;;
+			dump|dump,*)
+				opts="${v#dump}"
 
-			_network_netdev_id=$(($_network_netdev_id + 1))
-			_object_dump_filter_id=$(($_object_dump_filter_id + 1))
-			;;
-		netdev,*)
-			qemu_args="$qemu_args -netdev '${qemu_network#netdev,}'"
-			;;
-		*)
-			fatal "Unknown network type"
-			;;
-	esac
+				qemu_args="$qemu_args -netdev user,id=netdev-${_network_netdev_id}"
+				qemu_args="$qemu_args -device e1000,netdev=netdev-${_network_netdev_id}"
+				qemu_args="$qemu_args -object filter-dump,id=object-filter-dump-${_object_dump_filter_id},netdev=netdev-${_network_netdev_id}${opts:+$opts}"
+
+				_network_netdev_id=$(($_network_netdev_id + 1))
+				_object_dump_filter_id=$(($_object_dump_filter_id + 1))
+				;;
+			netdev,*)
+				qemu_args="$qemu_args -netdev '${v#netdev,}'"
+				;;
+			*)
+				fatal "Unknown network type: $v"
+				;;
+		esac
+
+		i=$(( $i + 1 ))
+	done
+
 }
 
 _process_qemu_kernel() {
