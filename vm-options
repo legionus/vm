@@ -152,7 +152,7 @@ parameter \
 	'one' \
 	'tempdir' \
 	'tempdir' \
-	'$TMPDIR' \
+	'${TMPDIR:-/tmp}' \
 	'Creates a temporary directory'
 
 parameter \
