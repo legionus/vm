@@ -36,6 +36,7 @@ debug_exec() {
 }
 
 vm_read_profile_config
+vm_check_kernel_config
 
 vm_profiles=
 git_config_get vm_profiles "$vm_config_file" "vm.profiles"

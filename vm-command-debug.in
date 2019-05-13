@@ -18,6 +18,7 @@ fi
 . "@PREFIX@/vm-sh-functions"
 
 vm_read_profile_config
+vm_check_kernel_config
 
 printf 'Profile: vm.%s\n' "$vm_profile"
 printf 'Configuration:\n'

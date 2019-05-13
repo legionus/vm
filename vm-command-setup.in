@@ -12,7 +12,8 @@ fi
 
 if [ -n "${VM_HELP_OPTIONS-}" ]; then
 	cat <<-EOF
-	  -g, --global=DIR    creates global rootfs;
+	  -g, --global=DIR       creates global rootfs;
+	  -r, --kernel-requires  show kernel options required for the specified profile;
 	EOF
 	exit 0
 fi
@@ -20,16 +21,21 @@ fi
 . shell-error
 . shell-git-config
 
-TEMP=`getopt -n $PROG -o 'g:' -l 'global:' -- "$@"` ||
+GETOPT_ALLOW_UNKNOWN=
+TEMP=`getopt -n $PROG -o 'g:,r' -l 'global:,kernel-requires' -- "$@"` ||
 	show_usage
 eval set -- "$TEMP"
 
 global=
-update=
+show_kernel_requires=
+
 while :; do
 	case "$1" in
 		-g|--global) shift
 			global="$1"
+			;;
+		-r|--kernel-requires)
+			show_kernel_requires=1
 			;;
 		--) shift; break
 			;;
@@ -54,6 +60,15 @@ else
 	verbose "Setup global rootfs."
 	dest_dir="$global"
 fi
+
+if [ -n "$show_kernel_requires" ]; then
+	cd '@PREFIX@'
+	grep -h -v -e '^[[:space:]]*\(#.*\)\?$' $kernel_config_expect |
+		sort -u
+	exit
+fi
+
+vm_check_kernel_config
 
 git_config_location_exists "$vm_config_file" "vm.$vm_profile" ||
 	verbose "Profile does not exist. Creating ..."

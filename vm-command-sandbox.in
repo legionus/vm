@@ -23,6 +23,7 @@ fi
 . "@PREFIX@/vm-sh-functions"
 
 vm_read_profile_config
+vm_check_kernel_config
 
 rootfs=
 git_config_get rootfs "$vm_config_file" "vm.$vm_profile.rootfs"
