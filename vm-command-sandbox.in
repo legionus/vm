@@ -1,5 +1,11 @@
 #!/bin/sh -efu
 
+if [ -n "${VM_USAGE-}" ]; then
+	printf 'sandbox <profile>\n'
+	printf 'sandbox <profile> PROG [ARGS...]\n'
+	exit 0
+fi
+
 if [ -n "${VM_HELP-}" ]; then
 	printf 'Runs a command in a sandboxed guest\n'
 	exit 0

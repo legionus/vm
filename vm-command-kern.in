@@ -1,5 +1,10 @@
 #!/bin/sh -efu
 
+if [ -n "${VM_USAGE-}" ]; then
+	printf 'kern <profile> <kernel>\n'
+	exit 0
+fi
+
 if [ -n "${VM_HELP-}" ]; then
 	printf 'Runs command with specified kernel\n'
 	exit 0

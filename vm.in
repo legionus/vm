@@ -5,10 +5,28 @@
 
 show_help() {
 	local n d i m x s
-	set +f
+	set +f --
+
+	for cmd in "@PREFIX@/vm-command-"*; do
+		[ -x "$cmd" ] ||
+			break
+
+		[ -n "${cmd##*.in}" ] ||
+			continue
+
+		set -- "$@" "$cmd"
+	done
+
+	printf 'Usage: %s [options] <command> [<profile>] [command-options]\n' "$PROG"
+
+	for cmd; do
+		VM_USAGE=1 "$cmd" |
+		while read -r m; do
+			printf '   or: %s %s\n' "$PROG" "$m"
+		done
+	done
 
 	cat <<-EOF
-	Usage: $PROG [options] <command> [<profile>] [command-options]
 
 	The program to run virtual machines and run programs in their
 	virtual environment.
@@ -17,28 +35,16 @@ show_help() {
 
 	EOF
 
-	for cmd in "@PREFIX@/vm-command-"*; do
-		[ -x "$cmd" ] ||
-			break
-
-		[ -n "${cmd##*.in}" ] ||
-			continue
-
+	for cmd; do
 		n="${cmd##*/vm-command-}"
-		m="$(VM_HELP=1 $cmd)"
+		m="$(VM_HELP=1 "$cmd")"
 
 		printf ' %10s - %s;\n' "$n" "$m"
 	done
 
-	for cmd in "@PREFIX@/vm-command-"*; do
-		[ -x "$cmd" ] ||
-			break
-
-		[ -n "${cmd##*.in}" ] ||
-			continue
-
+	for cmd; do
 		n="${cmd##*/vm-command-}"
-		m="$(VM_HELP_OPTIONS=1 $cmd)"
+		m="$(VM_HELP_OPTIONS=1 "$cmd")"
 
 		[ -n "${m:+1}" ] ||
 			continue

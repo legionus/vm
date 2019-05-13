@@ -1,5 +1,10 @@
 #!/bin/sh -efu
 
+if [ -n "${VM_USAGE-}" ]; then
+	printf 'debug <profile>\n'
+	exit 0
+fi
+
 if [ -n "${VM_HELP-}" ]; then
 	printf 'Shows the configuration and the command to be executed\n'
 	exit 0

@@ -1,5 +1,10 @@
 #!/bin/sh -efu
 
+if [ -n "${VM_USAGE-}" ]; then
+	printf 'setup <profile> [options]\n'
+	exit 0
+fi
+
 if [ -n "${VM_HELP-}" ]; then
 	printf 'Setup a new sandbox\n'
 	exit 0

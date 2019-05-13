@@ -1,5 +1,10 @@
 #!/bin/sh -efu
 
+if [ -n "${VM_USAGE-}" ]; then
+	printf 'run <profile>\n'
+	exit 0
+fi
+
 if [ -n "${VM_HELP-}" ]; then
 	printf 'Starts a virtual machine according to specified profile\n'
 	exit 0
