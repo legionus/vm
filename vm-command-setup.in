@@ -48,7 +48,6 @@ done
 
 if [ -z "$global" ]; then
 	. "@PREFIX@/vm-sh-config"
-	. "@PREFIX@/vm-sh-functions"
 
 	vm_read_common_config
 

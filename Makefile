@@ -36,8 +36,7 @@ MAKEINFO_FLAGS = -D "VERSION $(VERSION)"
 
 PROGRAMS    = vm
 DATA        = \
-    vm-options \
-    vm-sh-functions
+    vm-options
 HELPERS     = \
     vm-sh-config \
     vm-command-debug \

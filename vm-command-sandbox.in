@@ -20,7 +20,6 @@ fi
 . shell-git-config
 
 . "@PREFIX@/vm-sh-config"
-. "@PREFIX@/vm-sh-functions"
 
 vm_read_profile_config
 vm_check_kernel_config

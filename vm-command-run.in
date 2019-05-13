@@ -17,7 +17,6 @@ fi
 . shell-git-config
 
 . "@PREFIX@/vm-sh-config"
-. "@PREFIX@/vm-sh-functions"
 
 debug_exec() {
 	printf '%s \\\n' "$1"; shift
