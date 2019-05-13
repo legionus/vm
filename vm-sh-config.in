@@ -165,6 +165,8 @@ _process_qemu_console() {
 		virtio)
 			[ -z "$qemu_kernel" ] ||
 				_append_cmdline console hvc0
+			qemu_graphic=yes
+			qemu_args="$qemu_args -display none"
 			qemu_args="$qemu_args -device virtio-serial"
 			qemu_args="$qemu_args -device virtconsole,chardev=stdio"
 			;;
