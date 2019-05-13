@@ -12,8 +12,9 @@ fi
 
 if [ -n "${VM_HELP_OPTIONS-}" ]; then
 	cat <<-EOF
-	  -g, --global=DIR       creates global rootfs;
-	  -r, --kernel-requires  show kernel options required for the specified profile;
+	  -g, --global=DIR        creates global rootfs;
+	  -r, --kconfig-requires  show kernel options required for the specified profile;
+	  -m, --kconfig-merge     merge required kernel config fragments into .config;
 	EOF
 	exit 0
 fi
@@ -22,20 +23,24 @@ fi
 . shell-git-config
 
 GETOPT_ALLOW_UNKNOWN=
-TEMP=`getopt -n $PROG -o 'g:,r' -l 'global:,kernel-requires' -- "$@"` ||
+TEMP=`getopt -n $PROG -o 'g:,m,r' -l 'global:,kconfig-merge,kconfig-requires' -- "$@"` ||
 	show_usage
 eval set -- "$TEMP"
 
 global=
-show_kernel_requires=
+show_kconfig_requires=
+merge_kconfig_requires=
 
 while :; do
 	case "$1" in
 		-g|--global) shift
 			global="$1"
 			;;
-		-r|--kernel-requires)
-			show_kernel_requires=1
+		-m|--kconfig-merge)
+			merge_kconfig_requires=1
+			;;
+		-r|--kconfig-requires)
+			show_kconfig_requires=1
 			;;
 		--) shift; break
 			;;
@@ -60,10 +65,39 @@ else
 	dest_dir="$global"
 fi
 
-if [ -n "$show_kernel_requires" ]; then
+if [ -n "$show_kconfig_requires" ]; then
 	cd '@PREFIX@'
 	grep -h -v -e '^[[:space:]]*\(#.*\)\?$' $kernel_config_expect |
 		sort -u
+	exit
+fi
+
+if [ -n "$merge_kconfig_requires" ]; then
+	if [ -z "$kernel_dir" ]; then
+		n="${qemu_kernel-}"
+		while [ -e "$n" ]; do
+			if [ -s "${n%/*}/.config" ]; then
+				kernel_dir="${n%/*}"
+				break
+			fi
+			[ -z "${n##*/*}" ] ||
+				break
+			n="${n%/*}"
+		done
+	fi
+
+	[ -d "$kernel_dir" ] ||
+		fatal "kernel config merge doesn't make sense without kernel sources."
+
+	[ -s "$kernel_dir/.config" ] ||
+		fatal "$kernel_dir/.config: kernel config not found."
+
+	merge_config="$kernel_dir/scripts/kconfig/merge_config.sh"
+	[ -x "$merge_config" ] ||
+		fatal "$merge_config: not found or not executable. Can't merge."
+
+	cd '@PREFIX@'
+	"$merge_config" -m -y -O "$kernel_dir" "$kernel_dir/.config" $kernel_config_expect
 	exit
 fi
 
