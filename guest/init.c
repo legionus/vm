@@ -40,6 +40,7 @@ static const char *shell_prog[]   = { SHELL_EXEC,   NULL };
 static const char *const run_env[] = {
 	"TERM=linux",
 	"HOME=/virt/home",
+	"PS1=[shell]# ",
 	NULL
 };
 
