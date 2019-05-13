@@ -1,7 +1,7 @@
 #!/bin/sh -efu
 
 if [ -n "${VM_USAGE-}" ]; then
-	printf 'init <profile>\n'
+	printf 'init\n'
 	exit 0
 fi
 
