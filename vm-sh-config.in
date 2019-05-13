@@ -334,8 +334,10 @@ _process_qemu_addappend() {
 _process_qemu_balloon() {
 	[ -n "$qemu_balloon" ] ||
 		return 0
-	! shell_var_is_yes "$qemu_balloon" ||
+	if shell_var_is_yes "$qemu_balloon"; then
 		qemu_args="$qemu_args -balloon virtio"
+		kernel_config_expect="$kernel_config_expect kernel.config.balloon.virtio"
+	fi
 }
 
 _process_qemu_kvm() {
