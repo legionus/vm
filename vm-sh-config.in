@@ -14,6 +14,7 @@ vm_init_config() {
 	qemu_cmdline=
 	qemu_cmdline_names=' '
 	qemu_exec=
+	kernel_config_expect='kernel.config'
 }
 
 vm_profile="${vm_profile-}"
@@ -177,6 +178,8 @@ _process_qemu_console() {
 
 	qemu_args="$qemu_args -chardev stdio,mux=on,id=stdio,signal=off"
 	qemu_args="$qemu_args -mon chardev=stdio,mode=readline"
+
+	kernel_config_expect="$kernel_config_expect kernel.config.console.$qemu_console"
 }
 
 _process_qemu_logfile() {
@@ -265,11 +268,35 @@ _process_qemu_kernel() {
 				cut -f2-)"
 			if [ -s "$kernel_dir/.config" ]; then
 				local result expect
-				result="$(fgrep -f "@PREFIX@/kernel.config" "$kernel_dir/.config" |sort -u)"
-				expect="$(sort -u "@PREFIX@/kernel.config")"
 
-				[ "$result" = "$expect" ] ||
-					fatal "The kernel configuration most likely not compatible with qemu. Check \`@PREFIX@/kernel.config'."
+				expect=" $(
+					cd '@PREFIX@'
+					grep -h -v -e '^[[:space:]]*\(#.*\)\?$' $kernel_config_expect |
+						sort -u |
+						tr '\n' ' '
+				)"
+				result=" $(
+					cd '@PREFIX@'
+					printf '%s\n' $expect |
+						fgrep -f- "$kernel_dir"/.config |
+						sort -u |
+						tr '\n' ' '
+				)"
+
+				if [ "$result" != "$expect" ]; then
+					local n miss=
+					for n in $expect; do
+						[ -z "${result##* $n *}" ] ||
+							miss="$miss $n"
+					done
+					message "Missing kernel options:
+$(printf '%s\n' $miss)
+"
+					message "Check config files:
+$(printf '@PREFIX@/%s\n' $kernel_config_expect)
+"
+					fatal "The kernel configuration most likely not compatible with qemu."
+				fi
 			fi
 			;;
 	esac

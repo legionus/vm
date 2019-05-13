@@ -67,21 +67,6 @@ parameter \
 	'none' \
 	'Specifying the mode network stack'
 
-parameter \
-	'qemu_kernel' \
-	'one' \
-	'kernel' \
-	'kernel' \
-	'' \
-	'Use bzImage as kernel image'
-
-parameter \
-	'qemu_initrd' \
-	'one' \
-	'initrd' \
-	'initrd' \
-	'' \
-	'Use file as initial ram disk'
 
 parameter \
 	'qemu_append' \
@@ -194,4 +179,20 @@ parameter \
 	'boot' \
 	'' \
 	'Specifies boot order drives as a string of drive letters'
+
+parameter \
+	'qemu_initrd' \
+	'one' \
+	'initrd' \
+	'initrd' \
+	'' \
+	'Use file as initial ram disk'
+
+parameter \
+	'qemu_kernel' \
+	'one' \
+	'kernel' \
+	'kernel' \
+	'' \
+	'Use bzImage as kernel image'
 fi
