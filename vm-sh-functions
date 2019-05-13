@@ -8,7 +8,7 @@ __include_vm_sh_functions=1
 
 vm_read_config=
 vm_read_common_config() {
-	[ -z "$vm_read_config" -o "${1-}" = "force" ] ||
+	[ -z "$vm_read_config" ] || [ "${1-}" = "force" ] ||
 		return 0
 
 	[ -s "$vm_config_file" ] ||
@@ -21,7 +21,7 @@ vm_read_common_config() {
 }
 
 vm_read_profile_config() {
-	[ -z "$vm_read_config" -o "${1-}" = "force" ] ||
+	[ -z "$vm_read_config" ] || [ "${1-}" = "force" ] ||
 		return 0
 
 	[ -n "$vm_profile" ] ||

@@ -94,7 +94,7 @@ for n in dev etc home host proc root sys tmp var var/lib virt virt/home; do
 done
 
 for n in bin lib lib64 sbin usr etc/ld.so.conf; do
-	[ -e "./$n" -o -L "./$n" ] ||
+	[ -e "./$n" ] || [ -L "./$n" ] ||
 		ln ${verbose-} -s -- "/host/$n" "./$n"
 done
 
