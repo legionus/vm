@@ -44,7 +44,7 @@ dest_dir="$vm_profiles/$vm_profile"
 mkdir $verbose -p -- "$dest_dir"
 
 if [ -n "$qemu_logfile" ]; then
-	buf="$(mktemp -t "qemu.XXXXXXXXX")"
+	buf="$workdir/qemu.exec.buf"
 	{
 		rc=0
 		eval "${vm_dryrun:+debug_exec} $qemu_exec $qemu_args" ||

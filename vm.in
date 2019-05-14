@@ -2,6 +2,8 @@
 
 . shell-args
 . shell-getopt
+. shell-signal
+. shell-temp
 
 show_help() {
 	local n d i m x s
@@ -103,6 +105,13 @@ print_version() {
 	exit
 }
 
+workdir=
+exit_handler() {
+	trap - EXIT
+	rm -rf -- "$workdir"
+	exit "$1"
+}
+
 getopt_args=
 generate_getopt_args() {
 	local n c
@@ -195,6 +204,9 @@ vm_config_file="${VM_CONFIG:-$HOME/.vmconfig}"
 verbose "Config file: $vm_config_file"
 
 cwddir="$(readlink -ev .)"
+
+create_temporary workdir
+set_cleanup_handler exit_handler
 
 export vm_params vm_dryrun vm_profile
 export vm_config_file

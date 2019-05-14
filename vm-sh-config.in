@@ -149,8 +149,7 @@ _get_param_list() {
 _parse_config() {
 	local n t f c d
 
-	local clist
-	clist="$(mktemp -t "qemu.XXXXXXXXX")"
+	local clist="$workdir/clist"
 
 	git_config_parse "$1" > "$clist"
 
