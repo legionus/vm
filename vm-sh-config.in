@@ -9,47 +9,6 @@ __include_vm_sh_config=1
 . shell-cmdline
 . shell-git-config
 
-vm_init_config() {
-	qemu_args=
-	qemu_cmdline=
-	qemu_cmdline_names=' '
-	qemu_exec=
-	kernel_config_expect='kernel.config'
-}
-
-vm_read_config=
-vm_read_common_config() {
-	[ -z "$vm_read_config" ] || [ "${1-}" = "force" ] ||
-		return 0
-
-	[ -s "$vm_config_file" ] ||
-		fatal "Config file not found"
-
-	vm_init_config
-	vm_read_config "$vm_config_file"
-
-	vm_read_config=1
-}
-
-vm_read_profile_config() {
-	[ -z "$vm_read_config" ] || [ "${1-}" = "force" ] ||
-		return 0
-
-	[ -n "$vm_profile" ] ||
-		fatal "Profile name be specified"
-
-	[ -s "$vm_config_file" ] ||
-		fatal "Config file not found"
-
-	git_config_location_exists "$vm_config_file" "vm.$vm_profile" ||
-		fatal "Profile not exists: vm.$vm_profile"
-
-	vm_init_config
-	vm_read_config "$vm_config_file"
-
-	vm_read_config=1
-}
-
 kernel_dir=
 vm_check_kernel_config() {
 	[ -n "$kernel_dir" ] && [ -s "$kernel_dir/.config" ] ||
@@ -85,93 +44,6 @@ $(printf '@PREFIX@/%s\n' $kernel_config_expect)
 "
 		fatal "The kernel configuration most likely not compatible with qemu."
 	fi
-}
-
-vm_profile="${vm_profile-}"
-
-_get_value() {
-	local name default common_value= profile_value=
-	local conf_name conf_value
-
-	name="$1";    shift
-	default="$1"; shift
-
-	while IFS='	' read conf_name conf_value; do
-		[ "$conf_name" != "vm.$vm_profile.$name" ] ||
-			profile_value="$conf_value"
-		[ "$conf_name" != "vm.$name" ] ||
-			common_value="$conf_value"
-	done < "$clist"
-
-	value="$profile_value"
-	value="${value:-$common_value}"
-	value="${value:-$default}"
-}
-
-_get_param_one_bool() {
-	local retv value=
-	retv="$1"; shift
-
-	_get_value "$@"
-
-	shell_var_is_yes "$value" || shell_var_is_no "$value" ||
-		fatal "BUG: Unexpected value for '$1': $value (expected true/false variable)"
-
-	eval "export $retv=\"$value\""
-}
-
-_get_param_one() {
-	local retv value=
-	retv="$1"; shift
-
-	_get_value "$@"
-
-	eval "export $retv=\"$value\""
-}
-
-_get_param_list() {
-	local retv name i=0
-	local conf_name conf_value
-
-	retv="$1"; shift
-	name="$1"; shift
-
-	while IFS='	' read conf_name conf_value; do
-		[ "$conf_name" = "vm.$vm_profile.$name" ] ||
-			continue
-		eval "export ${retv}_$i=\"$conf_value\""
-		i=$(($i+1))
-	done < "$clist"
-
-	eval "export $retv=\"\$i\""
-}
-
-_parse_config() {
-	local n t f c d
-
-	local clist="$workdir/clist"
-
-	git_config_parse "$1" > "$clist"
-
-	for n in $vm_params; do
-		eval "[ -z \"\${$n-}\" ] || continue"
-		eval "t=\"\$${n}_type\""
-		eval "c=\"\${${n}_cfgname-}\""
-		eval "d=\"\${${n}_default-}\""
-
-		[ -n "$c" ] ||
-			continue
-
-		case "$t" in
-			one|one_bool|list)
-				;;
-			*)
-				fatal "Unknown value type for '$n': $t"
-				;;
-		esac
-
-		"_get_param_$t" "$n" "$c" "$d"
-	done
 }
 
 _append_cmdline() {
@@ -469,6 +341,92 @@ _process_qemu_virtfs() {
 	done
 }
 
+vm_profile="${vm_profile-}"
+_get_value() {
+	local name default common_value= profile_value=
+	local conf_name conf_value
+
+	name="$1";    shift
+	default="$1"; shift
+
+	while IFS='	' read conf_name conf_value; do
+		[ "$conf_name" != "vm.$vm_profile.$name" ] ||
+			profile_value="$conf_value"
+		[ "$conf_name" != "vm.$name" ] ||
+			common_value="$conf_value"
+	done < "$clist"
+
+	value="$profile_value"
+	value="${value:-$common_value}"
+	value="${value:-$default}"
+}
+
+_get_param_one_bool() {
+	local retv value=
+	retv="$1"; shift
+
+	_get_value "$@"
+
+	shell_var_is_yes "$value" || shell_var_is_no "$value" ||
+		fatal "BUG: Unexpected value for '$1': $value (expected true/false variable)"
+
+	eval "export $retv=\"$value\""
+}
+
+_get_param_one() {
+	local retv value=
+	retv="$1"; shift
+
+	_get_value "$@"
+
+	eval "export $retv=\"$value\""
+}
+
+_get_param_list() {
+	local retv name i=0
+	local conf_name conf_value
+
+	retv="$1"; shift
+	name="$1"; shift
+
+	while IFS='	' read conf_name conf_value; do
+		[ "$conf_name" = "vm.$vm_profile.$name" ] ||
+			continue
+		eval "export ${retv}_$i=\"$conf_value\""
+		i=$(($i+1))
+	done < "$clist"
+
+	eval "export $retv=\"\$i\""
+}
+
+_parse_config() {
+	local n t f c d
+
+	local clist="$workdir/clist"
+
+	git_config_parse "$1" > "$clist"
+
+	for n in $vm_params; do
+		eval "[ -z \"\${$n-}\" ] || continue"
+		eval "t=\"\$${n}_type\""
+		eval "c=\"\${${n}_cfgname-}\""
+		eval "d=\"\${${n}_default-}\""
+
+		[ -n "$c" ] ||
+			continue
+
+		case "$t" in
+			one|one_bool|list)
+				;;
+			*)
+				fatal "Unknown value type for '$n': $t"
+				;;
+		esac
+
+		"_get_param_$t" "$n" "$c" "$d"
+	done
+}
+
 vm_read_config() {
 	local vm_config_file="$1"
 	verbose "Read config: $vm_config_file"
@@ -484,6 +442,47 @@ vm_read_config() {
 	quote_shell_args qemu_args "$args"
 
 	export qemu_exec qemu_args qemu_cmdline
+}
+
+vm_init_config() {
+	qemu_args=
+	qemu_cmdline=
+	qemu_cmdline_names=' '
+	qemu_exec=
+	kernel_config_expect='kernel.config'
+}
+
+vm_read_config=
+vm_read_common_config() {
+	[ -z "$vm_read_config" ] || [ "${1-}" = "force" ] ||
+		return 0
+
+	[ -s "$vm_config_file" ] ||
+		fatal "Config file not found"
+
+	vm_init_config
+	vm_read_config "$vm_config_file"
+
+	vm_read_config=1
+}
+
+vm_read_profile_config() {
+	[ -z "$vm_read_config" ] || [ "${1-}" = "force" ] ||
+		return 0
+
+	[ -n "$vm_profile" ] ||
+		fatal "Profile name be specified"
+
+	[ -s "$vm_config_file" ] ||
+		fatal "Config file not found"
+
+	git_config_location_exists "$vm_config_file" "vm.$vm_profile" ||
+		fatal "Profile not exists: vm.$vm_profile"
+
+	vm_init_config
+	vm_read_config "$vm_config_file"
+
+	vm_read_config=1
 }
 
 fi
