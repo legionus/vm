@@ -38,6 +38,7 @@ static const char *sandbox_prog[] = { SANDBOX_EXEC, NULL };
 static const char *shell_prog[]   = { SHELL_EXEC,   NULL };
 
 static const char *const run_env[] = {
+	"PATH=/sbin:/usr/sbin:/usr/local/sbin:/lib/initrd/bin:/bin:/usr/bin:/usr/local/bin",
 	"TERM=linux",
 	"HOME=/virt/home",
 	"PS1=[shell]# ",
