@@ -192,11 +192,6 @@ done
 
 command="$1"; shift
 
-vm_profile=
-if [ "$#" -gt 0 ]; then
-	vm_profile="$1"; shift
-fi
-
 [ -x "@PREFIX@/vm-command-$command" ] ||
 	show_usage "Command unknown: $command"
 
@@ -208,7 +203,7 @@ cwddir="$(readlink -ev .)"
 create_temporary workdir
 set_cleanup_handler exit_handler
 
-export vm_params vm_dryrun vm_profile
+export vm_params vm_dryrun
 export vm_config_file
 export verbose cwddir
 

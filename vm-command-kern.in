@@ -17,6 +17,14 @@ fi
 . shell-error
 
 [ "$#" -gt 0 ] ||
+	show_usage "Profile name required"
+
+vm_profile="$1"
+shift
+
+export vm_profile
+
+[ "$#" -gt 0 ] ||
 	fatal "More arguments required"
 
 kernel="$1"

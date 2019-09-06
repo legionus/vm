@@ -15,6 +15,14 @@ if [ -n "${VM_HELP_OPTIONS-}" ]; then
 	exit 0
 fi
 
+[ "$#" -gt 0 ] ||
+	show_usage "Profile name required"
+
+vm_profile="$1"
+shift
+
+export vm_profile
+
 . shell-error
 . shell-quote
 . shell-git-config

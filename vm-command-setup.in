@@ -1,7 +1,7 @@
 #!/bin/sh -efu
 
 if [ -n "${VM_USAGE-}" ]; then
-	printf 'setup <profile> [options]\n'
+	printf 'setup [options] <profile>\n'
 	exit 0
 fi
 
@@ -48,8 +48,13 @@ while :; do
 	shift
 done
 
-[ -n "$vm_profile" ] ||
-	fatal "Profile name be specified"
+[ "$#" -gt 0 ] ||
+	show_usage "Profile name required"
+
+vm_profile="$1"
+shift
+
+export vm_profile
 
 if [ -z "$global" ]; then
 	. "@PREFIX@/vm-sh-config"
