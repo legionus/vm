@@ -45,6 +45,7 @@ subst_globals rootfs "$rootfs"
 {
 	printf '#!/bin/sh\n'
 	printf 'export PS1="[sandbox]# "\n'
+	printf 'export VM_PROFILE="%s"\n' "$vm_profile"
 	printf 'cd "%s"\n' "/host/$cwddir"
 	printf 'exec'
 	printf ' "%s"' "$@"
