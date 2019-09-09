@@ -65,9 +65,11 @@ if [ -z "$global" ]; then
 	git_config_get vm_profiles "$vm_config_file" "vm.profiles"
 
 	dest_dir="$vm_profiles/$vm_profile/rootfs"
+	config_dest_dir="$vm_profiles/@vm.name@/rootfs"
 else
 	verbose "Setup global rootfs."
 	dest_dir="$global"
+	config_dest_dir="$dest_dir"
 fi
 
 if [ -n "$show_kconfig_requires" ]; then
@@ -111,13 +113,13 @@ vm_check_kernel_config
 git_config_location_exists "$vm_config_file" "vm.$vm_profile" ||
 	verbose "Profile does not exist. Creating ..."
 
-git_config_set "$vm_config_file" "vm.$vm_profile.rootfs" "$dest_dir"
+git_config_set "$vm_config_file" "vm.$vm_profile.rootfs" "$config_dest_dir"
 [ -z "${qemu_kernel-}" ] ||
 	git_config_set "$vm_config_file" "vm.$vm_profile.kernel" "$qemu_kernel"
 git_config_set "$vm_config_file" "vm.$vm_profile.append" "init=virt/init root=/dev/root rootflags=rw,trans=virtio,version=9p2000.L,setuid=0 rootfstype=9p rw"
 
 git_config_unset  "$vm_config_file" "vm.$vm_profile.virtfs"
-git_config_append "$vm_config_file" "vm.$vm_profile.virtfs" "$dest_dir:/dev/root"
+git_config_append "$vm_config_file" "vm.$vm_profile.virtfs" "@vm.rootfs@:/dev/root"
 git_config_append "$vm_config_file" "vm.$vm_profile.virtfs" "/:hostfs"
 
 [ -d "$dest_dir" ] &&

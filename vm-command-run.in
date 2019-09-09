@@ -52,6 +52,7 @@ dest_dir="$vm_profiles/$vm_profile"
 mkdir $verbose -p -- "$dest_dir"
 
 if [ -n "$qemu_logfile" ]; then
+	subst_globals qemu_logfile "$qemu_logfile"
 	buf="$workdir/qemu.exec.buf"
 	{
 		rc=0

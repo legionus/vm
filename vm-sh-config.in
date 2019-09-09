@@ -46,6 +46,29 @@ $(printf '@PREFIX@/%s\n' $kernel_config_expect)
 	fi
 }
 
+subst_globals()
+{
+	local __retn="$1"; shift
+	local __retv="$*"; shift
+
+	[ -n "${__retv##*@vm.arch@*}" ] || [ -z "${qemu_arch-}" ] ||
+		__retv="$(printf '%s\n' "$__retv" |sed -e "s#@vm\.arch@#$qemu_arch#g")"
+
+	[ -n "${__retv##*@vm.machine@*}" ] || [ -z "${qemu_machine-}" ] ||
+		__retv="$(printf '%s\n' "$__retv" |sed -e "s#@vm\.machine@#$qemu_machine#g")"
+
+	[ -n "${__retv##*@vm.rootfs@*}" ] || [ -z "${qemu_rootfs-}" ] ||
+		__retv="$(printf '%s\n' "$__retv" |sed -e "s#@vm\.rootfs@#$qemu_rootfs#g")"
+
+	[ -n "${__retv##*@vm.profiles@*}" ] || [ -z "${vm_profiles-}" ] ||
+		__retv="$(printf '%s\n' "$__retv" |sed -e "s#@vm\.profiles@#$vm_profiles#g")"
+
+	[ -n "${__retv##*@vm.name@*}" ] || [ -z "${vm_profile-}" ] ||
+		__retv="$(printf '%s\n' "$__retv" |sed -e "s#@vm\.name@#$vm_profile#g")"
+
+	eval "$__retn=\"\$__retv\""
+}
+
 _append_cmdline() {
 	local n="$1" v="${2-}"
 	[ -n "${qemu_cmdline_names##* $n *}" ] ||
@@ -127,19 +150,26 @@ _process_qemu_logfile() {
 	return 0
 }
 
+_process_qemu_rootfs() {
+	return 0
+}
+
 _process_qemu_monitor() {
 	[ -n "$qemu_monitor" ] ||
 		return 0
 
-	case "${qemu_monitor%%:*}" in
+	local v="$qemu_monitor"
+	subst_globals v "$v"
+
+	case "${v%%:*}" in
 		none)
 			qemu_args="$qemu_args -monitor none"
 			;;
 		qmp)
-			qemu_args="$qemu_args -qmp '${qemu_monitor#qmp:}'"
+			qemu_args="$qemu_args -qmp '${v#qmp:}'"
 			;;
 		monitor)
-			qemu_args="$qemu_args -monitor '${qemu_monitor#monitor:}'"
+			qemu_args="$qemu_args -monitor '${v#monitor:}'"
 			;;
 	esac
 }
@@ -209,10 +239,13 @@ _process_qemu_kernel() {
 			;;
 	esac
 
-	[ -f "$qemu_kernel" ] ||
-		fatal "Unable to find kernel"
+	local v="$qemu_kernel"
+	subst_globals v "$v"
 
-	qemu_args="$qemu_args -kernel '$qemu_kernel'"
+	[ -f "$v" ] ||
+		fatal "Unable to find kernel: $v"
+
+	qemu_args="$qemu_args -kernel '$v'"
 }
 
 _process_qemu_initrd() {
@@ -272,7 +305,9 @@ _process_qemu_graphic() {
 _process_qemu_tempdir() {
 	[ -n "$qemu_tempdir" ] ||
 		return 0
-	export TMPDIR="$qemu_tempdir"
+	local v="$qemu_tempdir"
+	subst_globals v "$v"
+	export TMPDIR="$v"
 }
 
 _process_qemu_watchdog() {
@@ -292,6 +327,7 @@ _process_qemu_watchdog() {
 
 	local IFS=,
 	_parse_qemu_watchdog $qemu_watchdog
+	subst_globals action "$action"
 
 	qemu_args="$qemu_args -watchdog '$model' -watchdog-action '$action'"
 }
@@ -302,6 +338,7 @@ _process_qemu_disk() {
 	local v i=0
 	while [ $i -lt $qemu_disk ]; do
 		eval "v=\"\$qemu_disk_$i\""
+		subst_globals v "$v"
 		[ -n "${v##*[!,],[!,]*}" ] &&
 			qemu_args="$qemu_args -drive 'file=$v,if=virtio,cache=writeback'" ||
 			qemu_args="$qemu_args -drive '$v'"
@@ -315,6 +352,7 @@ _process_qemu_device() {
 	local v i=0
 	while [ $i -lt $qemu_device ]; do
 		eval "v=\"\$qemu_device_$i\""
+		subst_globals v "$v"
 		qemu_args="$qemu_args -device '$v'"
 		i=$(($i + 1))
 	done
@@ -326,6 +364,7 @@ _process_qemu_virtfs() {
 	local v i=0
 	while [ $i -lt $qemu_virtfs ]; do
 		eval "v=\"\$qemu_virtfs_$i\""
+		subst_globals v "$v"
 
 		if [ -n "${v##*[!,],[!,]*}" ]; then
 			# Broken: http://patchwork.ozlabs.org/patch/127551/
@@ -466,6 +505,7 @@ vm_read_common_config() {
 	vm_read_config=1
 }
 
+vm_profiles=
 vm_read_profile_config() {
 	[ -z "$vm_read_config" ] || [ "${1-}" = "force" ] ||
 		return 0
@@ -478,6 +518,9 @@ vm_read_profile_config() {
 
 	git_config_location_exists "$vm_config_file" "vm.$vm_profile" ||
 		fatal "Profile not exists: vm.$vm_profile"
+
+	vm_profiles=
+	git_config_get vm_profiles "$vm_config_file" "vm.profiles"
 
 	vm_init_config
 	vm_read_config "$vm_config_file"

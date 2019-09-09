@@ -38,6 +38,7 @@ else
 	fatal "kernel file or path required"
 fi
 
+subst_globals qemu_kernel "$qemu_kernel"
 export qemu_kernel
 
 [ "$#" -gt 0 ] &&
