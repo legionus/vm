@@ -3,6 +3,7 @@
 if [ -n "${VM_USAGE-}" ]; then
 	printf 'setup [options] <profile>\n'
 	printf 'setup --list [<profile> ...]\n'
+	printf 'setup --delete [<profile> ...]\n'
 	exit 0
 fi
 
@@ -13,6 +14,7 @@ fi
 
 if [ -n "${VM_HELP_OPTIONS-}" ]; then
 	cat <<-EOF
+	  -d, --delete            removes profile;
 	  -l, --list              shows information about profiles;
 	  -g, --global=DIR        creates global rootfs;
 	  -r, --kconfig-requires  shows kernel options required for the specified profile;
@@ -26,7 +28,7 @@ fi
 . shell-git-config
 
 GETOPT_ALLOW_UNKNOWN=
-TEMP=`getopt -n $PROG -o 'g:,l,m,r' -l 'global:,list,kconfig-merge,kconfig-requires,usage' -- "$@"` ||
+TEMP=`getopt -n $PROG -o 'g:,d,l,m,r' -l 'global:,list,kconfig-merge,kconfig-requires,delete,usage' -- "$@"` ||
 	show_usage
 eval set -- "$TEMP"
 
@@ -34,11 +36,15 @@ global=
 show_kconfig_requires=
 merge_kconfig_requires=
 list_profiles=
+delete_profile=
 
 while :; do
 	case "$1" in
 		-g|--global) shift
 			global="$1"
+			;;
+		-d|--delete)
+			delete_profile=1
 			;;
 		-l|--list)
 			list_profiles=1
@@ -93,6 +99,39 @@ if [ -n "$list_profiles" ]; then
 				-e 's/^vm\.(.+)\..+$/\1/p' |
 			sort -u
 	fi
+	exit
+elif [ -n "$delete_profile" ]; then
+	vm_profiles=
+	git_config_get vm_profiles "$vm_config_file" "vm.profiles"
+
+	for profile; do
+		[ ! -d "$vm_profiles/$profile" ] ||
+			$vm_dryrun rm -rf -- "$vm_profiles/$profile"
+	done
+
+	git_config_list "$vm_config_file" |
+		sort |
+	while read -r s; do
+		n="${s%%=*}"
+		n="${n#vm.}"
+		n="${n%.*}"
+
+		found=
+		for profile; do
+			[ "$n" != "$profile" ] ||
+				found=1
+		done
+
+		[ -n "$found" ] ||
+			continue
+
+		$vm_dryrun git_config_unset "$vm_config_file" "${s%%=*}"
+	done
+
+	for profile; do
+		$vm_dryrun git_config_unset "$vm_config_file" "vm.$profile"
+	done
+
 	exit
 fi
 
