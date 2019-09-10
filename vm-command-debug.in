@@ -11,8 +11,27 @@ if [ -n "${VM_HELP-}" ]; then
 fi
 
 if [ -n "${VM_HELP_OPTIONS-}" ]; then
+	cat <<-EOF
+	  --usage    shows the help message of subcommand.
+	EOF
 	exit 0
 fi
+
+GETOPT_ALLOW_UNKNOWN=
+TEMP=`getopt -n $PROG -o '' -l 'usage' -- "$@"` ||
+	show_usage
+eval set -- "$TEMP"
+
+while :; do
+	case "$1" in
+		--usage)
+			show_command_help
+			;;
+		--) shift; break
+			;;
+	esac
+	shift
+done
 
 [ "$#" -gt 0 ] ||
 	show_usage "Profile name required"

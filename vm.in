@@ -93,6 +93,26 @@ EOF
 	exit
 }
 
+show_command_help() {
+	local prefix='Usage'
+	VM_USAGE=1 "@PREFIX@/vm-command-$command" |
+	while read -r m; do
+		printf '%s: %s %s\n' "$prefix" "$PROG" "$m"
+		prefix='   or'
+	done
+	printf '\n'
+
+	VM_HELP=1 "@PREFIX@/vm-command-$command"
+	printf '\n'
+
+	printf 'Options:\n'
+	VM_HELP_OPTIONS=1 "@PREFIX@/vm-command-$command"
+	printf '\n'
+
+	printf '%s\n\n' "Report bugs to author."
+	exit
+}
+
 print_version() {
 	cat <<-EOF
 	$PROG version @VERSION@
