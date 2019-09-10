@@ -151,8 +151,12 @@ if [ -n "$merge_kconfig_requires" ]; then
 	[ -x "$merge_config" ] ||
 		fatal "$merge_config: not found or not executable. Can't merge."
 
+	have_builtin=
+	! "$merge_config" -h | grep -qs -e '^[[:space:]]\+-y[[:space:]]' ||
+		have_builtin=1
+
 	cd '@PREFIX@'
-	"$merge_config" -m -y -O "$kernel_dir" "$kernel_dir/.config" $kernel_config_expect
+	"$merge_config" -m ${have_builtin:+-y} -O "$kernel_dir" "$kernel_dir/.config" $kernel_config_expect
 	exit
 fi
 
