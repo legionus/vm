@@ -2,6 +2,7 @@
 
 if [ -n "${VM_USAGE-}" ]; then
 	printf 'setup [options] <profile>\n'
+	printf 'setup --list [<profile> ...]\n'
 	exit 0
 fi
 
@@ -12,6 +13,7 @@ fi
 
 if [ -n "${VM_HELP_OPTIONS-}" ]; then
 	cat <<-EOF
+	  -l, --list              show information about profiles;
 	  -g, --global=DIR        creates global rootfs;
 	  -r, --kconfig-requires  show kernel options required for the specified profile;
 	  -m, --kconfig-merge     merge required kernel config fragments into .config;
@@ -23,18 +25,22 @@ fi
 . shell-git-config
 
 GETOPT_ALLOW_UNKNOWN=
-TEMP=`getopt -n $PROG -o 'g:,m,r' -l 'global:,kconfig-merge,kconfig-requires' -- "$@"` ||
+TEMP=`getopt -n $PROG -o 'g:,l,m,r' -l 'global:,list,kconfig-merge,kconfig-requires' -- "$@"` ||
 	show_usage
 eval set -- "$TEMP"
 
 global=
 show_kconfig_requires=
 merge_kconfig_requires=
+list_profiles=
 
 while :; do
 	case "$1" in
 		-g|--global) shift
 			global="$1"
+			;;
+		-l|--list)
+			list_profiles=1
 			;;
 		-m|--kconfig-merge)
 			merge_kconfig_requires=1
@@ -47,6 +53,44 @@ while :; do
 	esac
 	shift
 done
+
+if [ -n "$list_profiles" ]; then
+	if [ "$#" -gt 0 ]; then
+		git_config_list "$vm_config_file" |
+			sort |
+		while read -r s; do
+			n="${s%%=*}"
+			n="${n#vm.}"
+			n="${n%.*}"
+
+			found=
+			for profile; do
+				[ "$n" != "$profile" ] ||
+					found=1
+			done
+
+			[ -n "$found" ] ||
+				continue
+
+			if [ -z "${vm-}" ] || [ "$vm" != "$n" ]; then
+				printf '[vm "%s"]\n' "$n"
+				vm="$n"
+			fi
+
+			v="${s#vm.$n.}"
+
+			[ -z "${v##\#*}" ] ||
+				printf '  %10s = %s\n' "${v%%=*}" "${v#*=}"
+		done
+	else
+		git_config_list "$vm_config_file" |
+			sed -n -r \
+				-e 's/^([^=]+)=.*$/\1/' \
+				-e 's/^vm\.(.+)\..+$/\1/p' |
+			sort -u
+	fi
+	exit
+fi
 
 [ "$#" -gt 0 ] ||
 	show_usage "Profile name required"
