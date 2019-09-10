@@ -380,6 +380,31 @@ _process_qemu_virtfs() {
 	done
 }
 
+_process_qemu_random() {
+	[ -n "$qemu_random" ] ||
+		return 0
+	case "$qemu_random" in
+		virtio,/*)
+			# random=virtio,/dev/random
+			qemu_args="$qemu_args -object rng-random,filename="${qemu_random#virtio,}",id=rng0"
+			qemu_args="$qemu_args -device virtio-rng-pci,rng=rng0"
+			kernel_config_expect="$kernel_config_expect kernel.config.rnd.virtio"
+			;;
+		egd,*)
+			# random=egd,host=10.66.4.212,port=1024
+			qemu_args="$qemu_args -chardev socket,id=chr0,${qemu_random#egd,}"
+			qemu_args="$qemu_args -object rng-egd,chardev=chr0,id=rng0"
+			qemu_args="$qemu_args -device virtio-rng-pci,rng=rng0"
+			kernel_config_expect="$kernel_config_expect kernel.config.rnd.virtio"
+			;;
+		none)
+			;;
+		*)
+			fatal "BUG: Unknown random type: $qemu_random"
+			;;
+	esac
+}
+
 vm_profile="${vm_profile-}"
 _get_value() {
 	local name default common_value= profile_value=

@@ -191,6 +191,14 @@ parameter \
 	'Specifies bzImage as kernel image'
 
 parameter \
+	'qemu_random' \
+	'one' \
+	'random' \
+	'random' \
+	'' \
+	'Use specified a random number generator backend'
+
+parameter \
 	'qemu_rootfs' \
 	'one' \
 	'rootfs' \
