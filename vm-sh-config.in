@@ -223,9 +223,13 @@ _process_qemu_kernel() {
 		return 0
 
 	case "$qemu_kernel" in
-		find,*)
-			kernel_dir="${qemu_kernel#find,}"
-			subst_globals kernel_dir "$kernel_dir"
+		gittree|find,*)
+			if [ "$qemu_kernel" = gittree ]; then
+				kernel_dir="$(git rev-parse --show-toplevel)"
+			else
+				kernel_dir="${qemu_kernel#find,}"
+				subst_globals kernel_dir "$kernel_dir"
+			fi
 			qemu_kernel="$(set +f;
 				find "$kernel_dir"/arch/*/boot \
 					-type f -a \
