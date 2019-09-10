@@ -225,6 +225,7 @@ _process_qemu_kernel() {
 	case "$qemu_kernel" in
 		find,*)
 			kernel_dir="${qemu_kernel#find,}"
+			subst_globals kernel_dir "$kernel_dir"
 			qemu_kernel="$(set +f;
 				find "$kernel_dir"/arch/*/boot \
 					-type f -a \
