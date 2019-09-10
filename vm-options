@@ -11,7 +11,7 @@ parameter \
 	'machine' \
 	'machine' \
 	'type=q35,accel=kvm:tcg' \
-	'Specifying the emulated machine'
+	'Specifies the emulated machine'
 
 parameter \
 	'qemu_arch' \
@@ -19,7 +19,7 @@ parameter \
 	'arch' \
 	'arch' \
 	'x86_64' \
-	'Specifying target architecture'
+	'Specifies target architecture'
 
 parameter \
 	'qemu_cpu' \
@@ -27,7 +27,7 @@ parameter \
 	'cpu-model' \
 	'cpu-model' \
 	'kvm64' \
-	'Specifying CPU model'
+	'Specifies CPU model'
 
 parameter \
 	'qemu_cpus' \
@@ -35,7 +35,7 @@ parameter \
 	'num-cpus' \
 	'num-cpus' \
 	'$(getconf _NPROCESSORS_ONLN)' \
-	'Simulate an SMP system with n CPUs'
+	'Simulates an SMP system with n CPUs'
 
 parameter \
 	'qemu_memory' \
@@ -43,7 +43,7 @@ parameter \
 	'memory' \
 	'memory' \
 	'$(( 64 * ($qemu_cpus_default + 3) ))M' \
-	'Specifying virtual RAM size'
+	'Specifies virtual RAM size'
 
 parameter \
 	'qemu_console' \
@@ -51,7 +51,7 @@ parameter \
 	'console' \
 	'console' \
 	'serial' \
-	'Specifying console type'
+	'Specifies console type'
 
 parameter \
 	'qemu_network' \
@@ -59,7 +59,7 @@ parameter \
 	'network' \
 	'network' \
 	'none' \
-	'Specifying the mode network stack'
+	'Specifies the mode network stack'
 
 
 parameter \
@@ -68,7 +68,7 @@ parameter \
 	'append' \
 	'append' \
 	'' \
-	'Use cmdline as kernel command line'
+	'Specifies cmdline as kernel command line'
 
 parameter \
 	'qemu_addappend' \
@@ -84,7 +84,7 @@ parameter \
 	'balloon' \
 	'balloon' \
 	'false' \
-	'Enable virtio balloon device'
+	'Enables virtio balloon device'
 
 parameter \
 	'qemu_kvm' \
@@ -92,7 +92,7 @@ parameter \
 	'enable-kvm' \
 	'enable-kvm' \
 	'false' \
-	'Enable KVM full virtualization support'
+	'Enables KVM full virtualization support'
 
 parameter \
 	'qemu_reboot' \
@@ -108,7 +108,7 @@ parameter \
 	'monitor' \
 	'monitor' \
 	'qmp:unix:@vm.profiles@/@vm.name@/socket,server,nowait' \
-	'Redirect the monitor to host device'
+	'Redirects the monitor to host device'
 
 parameter \
 	'qemu_graphic' \
@@ -180,7 +180,7 @@ parameter \
 	'initrd' \
 	'initrd' \
 	'' \
-	'Use file as initial ram disk'
+	'Specifies file as initial ram disk'
 
 parameter \
 	'qemu_kernel' \
@@ -188,7 +188,7 @@ parameter \
 	'kernel' \
 	'kernel' \
 	'' \
-	'Use bzImage as kernel image'
+	'Specifies bzImage as kernel image'
 
 parameter \
 	'qemu_rootfs' \
