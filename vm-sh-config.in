@@ -67,6 +67,9 @@ subst_globals()
 	[ -n "${__retv##*@vm.name@*}" ] || [ -z "${vm_profile-}" ] ||
 		__retv="$(printf '%s\n' "$__retv" |sed -e "s#@vm\.name@#$vm_profile#g")"
 
+	[ -n "${__retv##*@home@*}" ] || [ -z "${HOME-}" ] ||
+		__retv="$(printf '%s\n' "$__retv" |sed -e "s#@home@#$HOME#g")"
+
 	eval "$__retn=\"\$__retv\""
 }
 
