@@ -3,8 +3,6 @@
 if [ -z "${__include_vm_options-}" ]; then
 __include_vm_options=1
 
-. shell-git-config
-
 parameter \
 	'qemu_machine' \
 	'one' \

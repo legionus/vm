@@ -12,18 +12,22 @@ fi
 
 if [ -n "${VM_HELP_OPTIONS-}" ]; then
 	cat <<-EOF
-	  --usage    shows the help message of subcommand.
+	  --no-check-kernel-config    do not check kernel .config;
+	  --usage                     shows the help message of subcommand.
 	EOF
 	exit 0
 fi
 
 GETOPT_ALLOW_UNKNOWN=
-TEMP=`getopt -n $PROG -o '' -l 'usage' -- "$@"` ||
+TEMP=`getopt -n $PROG -o '' -l 'no-check-kernel-config,usage' -- "$@"` ||
 	show_usage
 eval set -- "$TEMP"
 
 while :; do
 	case "$1" in
+		--no-check-kernel-config)
+			no_check_kernel_config=1
+			;;
 		--usage)
 			show_command_help
 			;;

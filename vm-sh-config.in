@@ -9,9 +9,10 @@ __include_vm_sh_config=1
 . shell-cmdline
 . shell-git-config
 
+no_check_kernel_config=
 kernel_dir=
 vm_check_kernel_config() {
-	[ -n "$kernel_dir" ] && [ -s "$kernel_dir/.config" ] ||
+	[ -z "$no_check_kernel_config" ] && [ -n "$kernel_dir" ] && [ -s "$kernel_dir/.config" ] ||
 		return 0
 
 	local result expect
@@ -192,6 +193,7 @@ _process_qemu_network() {
 				qemu_args="$qemu_args -net none"
 				;;
 			user|user,*)
+				# user,model=virtio-net-pci
 				opts="${v#user}"
 				qemu_args="$qemu_args -nic 'user${opts:+$opts}'"
 				;;

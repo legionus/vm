@@ -14,12 +14,13 @@ fi
 
 if [ -n "${VM_HELP_OPTIONS-}" ]; then
 	cat <<-EOF
-	  -d, --delete            removes profile;
-	  -l, --list              shows information about profiles;
-	  -g, --global=DIR        creates global rootfs;
-	  -r, --kconfig-requires  shows kernel options required for the specified profile;
-	  -m, --kconfig-merge     merges required kernel config fragments into .config;
-	  --usage                 shows the help message of subcommand.
+	  -d, --delete                removes profile;
+	  -l, --list                  shows information about profiles;
+	  -g, --global=DIR            creates global rootfs;
+	  -r, --kconfig-requires      shows kernel options required for the specified profile;
+	  -m, --kconfig-merge         merges required kernel config fragments into .config;
+	  --no-check-kernel-config    do not check kernel .config;
+	  --usage                     shows the help message of subcommand.
 	EOF
 	exit 0
 fi
@@ -28,7 +29,7 @@ fi
 . shell-git-config
 
 GETOPT_ALLOW_UNKNOWN=
-TEMP=`getopt -n $PROG -o 'g:,d,l,m,r' -l 'global:,list,kconfig-merge,kconfig-requires,delete,usage' -- "$@"` ||
+TEMP=`getopt -n $PROG -o 'g:,d,l,m,r' -l 'global:,no-check-kernel-config,list,kconfig-merge,kconfig-requires,delete,usage' -- "$@"` ||
 	show_usage
 eval set -- "$TEMP"
 
@@ -54,6 +55,9 @@ while :; do
 			;;
 		-r|--kconfig-requires)
 			show_kconfig_requires=1
+			;;
+		--no-check-kernel-config)
+			no_check_kernel_config=1
 			;;
 		--usage)
 			show_command_help

@@ -12,7 +12,7 @@ fi
 
 if [ -n "${VM_HELP_OPTIONS-}" ]; then
 	cat <<-EOF
-	  --usage    shows the help message of subcommand.
+	  --usage                     shows the help message of subcommand.
 	EOF
 	exit 0
 fi
