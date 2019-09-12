@@ -125,25 +125,22 @@ do_mounts(void)
 {
 	if (!access("/host", R_OK)) {
 		if (mount("hostfs", "/host", "9p", MS_RDONLY, "trans=virtio,version=9p2000.L"))
-			fprintf(stderr, "mount failed [/host]: %s\n", strerror(errno));
+			error(0, errno, "mount failed [/host]");
 	}
 
 	if (mount("proc",     "/proc", "proc",     0UL, NULL)) {
-		if (errno != EBUSY) {
-			fprintf(stderr, "mount failed [/proc]: %s\n", strerror(errno));
-		}
+		if (errno != EBUSY)
+			error(0, errno, "mount failed [/proc]");
 	}
 
 	if (mount("sysfs",    "/sys",  "sysfs",    0UL, NULL)) {
-		if (errno != EBUSY) {
-			fprintf(stderr, "mount failed [/sys]: %s\n", strerror(errno));
-		}
+		if (errno != EBUSY)
+			error(0, errno, "mount failed [/sys]");
 	}
 
 	if (mount("devtmpfs", "/dev",  "devtmpfs", 0UL, NULL)) {
-		if (errno != EBUSY) {
-			fprintf(stderr, "mount failed [/dev]: %s\n", strerror(errno));
-		}
+		if (errno != EBUSY)
+			error(0, errno, "mount failed [/dev]");
 	}
 
 	if (access("/dev/pts", R_OK)) {
@@ -151,15 +148,13 @@ do_mounts(void)
 	}
 
 	if (mount("devpts", "/dev/pts", "devpts",  0UL, NULL)) {
-		if (errno != EBUSY) {
-			fprintf(stderr, "mount failed [/dev/pts]: %s\n", strerror(errno));
-		}
+		if (errno != EBUSY)
+			error(0, errno, "mount failed [/dev/pts]");
 	}
 
 	if (mount("tmpfs",    "/tmp",  "tmpfs",    0UL, NULL)) {
-		if (errno != EBUSY) {
-			fprintf(stderr, "mount failed [/tmp]: %s\n", strerror(errno));
-		}
+		if (errno != EBUSY)
+			error(0, errno, "mount failed [/tmp]");
 	}
 }
 
@@ -197,12 +192,12 @@ mmap_module(const char *filename, size_t *image_size_p)
 	int fd;
 
 	if ((fd = open(filename, O_RDONLY)) == -1) {
-		perror("open");
+		error(0, errno, "open");
 		return NULL;
 	}
 
 	if (fstat(fd, &st) == -1) {
-		perror("fstat");
+		error(0, errno, "fstat");
 		close(fd);
 		return NULL;
 	}
@@ -210,7 +205,7 @@ mmap_module(const char *filename, size_t *image_size_p)
 	image_size = (size_t) st.st_size;
 
 	if ((image = mmap(NULL, image_size, PROT_READ, MAP_PRIVATE, fd, 0)) == MAP_FAILED) {
-		perror("mmap");
+		error(0, errno, "mmap");
 		close(fd);
 		return NULL;
 	}
@@ -221,13 +216,12 @@ mmap_module(const char *filename, size_t *image_size_p)
 	return image;
 }
 
-static int
+static void
 load_modules(void)
 {
 	char path[MAXPATHLEN];
 
 	FILE *f = NULL;
-	int rc = 0;
 
 	size_t image_size;
 	void *image;
@@ -235,46 +229,34 @@ load_modules(void)
 
 	if (access(MODULES_FILE, R_OK) != 0) {
 		printf("%s not found. Nothing to do ...\n", MODULES_FILE);
-		return 0;
+		return;
 	}
 
-	if ((f = fopen(MODULES_FILE, "r")) == NULL) {
-		perror("fopen");
-		return 1;
-	}
+	if ((f = fopen(MODULES_FILE, "r")) == NULL)
+		error(EXIT_FAILURE, errno, "fopen");
 
 	while (fscanf(f, "%s", path) != EOF) {
 		image_size = 0;
 
 		image = mmap_module(path, &image_size);
-		if (!image) {
+		if (!image)
 			continue;
-		}
 
 		if (init_module(image, image_size, image_params) != 0) {
-			if (errno != EEXIST) {
-				fprintf(stderr, "Error: init_module: %s: %s\n", path, moderror(errno));
-
-				munmap(image, image_size);
-
-				rc = 1;
-				break;
-			}
+			if (errno != EEXIST)
+				error(EXIT_FAILURE, 0, "init_module: %s: %s\n", path, moderror(errno));
 		}
 
 		munmap(image, image_size);
 	}
 
-	if (ferror(f)) {
-		perror("fscanf");
-		rc = 1;
-	}
+	if (ferror(f))
+		error(EXIT_FAILURE, errno, "fscanf");
 
 	fclose(f);
-	return rc;
 }
 
-static int
+static void
 load_env(void)
 {
 	char *envvar = NULL;
@@ -286,13 +268,11 @@ load_env(void)
 
 	if (access(ENV_FILE, R_OK) != 0) {
 		printf("%s not found. Nothing to do ...\n", ENV_FILE);
-		return 0;
+		return;
 	}
 
-	if ((f = fopen(ENV_FILE, "r")) == NULL) {
-		perror("fopen");
-		return 1;
-	}
+	if ((f = fopen(ENV_FILE, "r")) == NULL)
+		error(EXIT_FAILURE, errno, "fopen");
 
 	while ((nread = getline(&line, &len, f)) != -1) {
 		if (nread == 0 || line[0] == '\n')
@@ -303,10 +283,8 @@ load_env(void)
 
 		envvar = strndup(line, (size_t) nread);
 
-		if (!envvar) {
-			perror("strndup");
-			return 1;
-		}
+		if (!envvar)
+			error(EXIT_FAILURE, errno, "strndup");
 
 		putenv(envvar);
 	}
@@ -315,8 +293,6 @@ load_env(void)
 	fclose(f);
 
 	env = environ;
-
-	return 0;
 }
 
 int
@@ -332,20 +308,15 @@ main(void)
 
 	env = (char **) default_env;
 
-	if (load_modules())
-		return 1;
-
-	if (load_env())
-		return 1;
-
+	load_modules();
+	load_env();
 	do_mounts();
 
 	setsid();
 	ioctl(0, TIOCSCTTY, 1);
 
-	if (!access(SANDBOX_EXEC, R_OK)) {
+	if (!access(SANDBOX_EXEC, R_OK))
 		prog = sandbox_prog;
-	}
 
 	run_wait(prog);
 	sysreboot();
