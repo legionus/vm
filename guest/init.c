@@ -57,13 +57,11 @@ static sig_atomic_t got_ECHILD;
 static void
 chld_handler(int sig __attribute__ ((__unused__)))
 {
-	int     rc, status;
-	int     saved_errno = errno;
+	int rc, status;
+	int saved_errno = errno;
 
-	while ((rc = waitpid(-1, &status, WNOHANG)))
-	{
-		if (rc < 0 && errno == ECHILD)
-		{
+	while ((rc = waitpid(-1, &status, WNOHANG))) {
+		if (rc < 0 && errno == ECHILD) {
 			got_ECHILD = 1;
 			break;
 		}
@@ -76,18 +74,16 @@ static  pid_t
 run(const char *cmd[])
 {
 	const char *exe = cmd[0];
-	pid_t   pid;
+	pid_t pid;
 
 #ifdef DEBUG
 	error(0, 0, "Executing %s", exe);
 #endif
-	if ((pid = fork()) == -1)
-	{
+	if ((pid = fork()) == -1) {
 		error(0, errno, "fork");
 		return -1;
 	}
-	if (pid == 0)
-	{
+	if (pid == 0) {
 		execve(exe, (char *const *) cmd, env);
 		error(0, errno, "%s: execve:", exe);
 		_exit(EXIT_FAILURE);
@@ -98,14 +94,13 @@ run(const char *cmd[])
 static int
 run_wait(const char *prog[])
 {
-	int     status = 0;
-	pid_t   pid = run(prog);
+	int status = 0;
+	pid_t pid = run(prog);
 
 	if (pid == -1)
 		return EXIT_FAILURE;
 
-	if (waitpid(pid, &status, 0) == -1)
-	{
+	if (waitpid(pid, &status, 0) == -1) {
 		error(0, errno, "waitpid");
 		return EXIT_FAILURE;
 	}
