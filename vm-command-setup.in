@@ -16,6 +16,7 @@ if [ -n "${VM_HELP_OPTIONS-}" ]; then
 	cat <<-EOF
 	  -d, --delete                removes profile;
 	  -l, --list                  shows information about profiles;
+	  -L, --long-list             shows detailed information about profiles;
 	  -g, --global=DIR            creates global rootfs;
 	  -r, --kconfig-requires      shows kernel options required for the specified profile;
 	  -m, --kconfig-merge         merges required kernel config fragments into .config;
@@ -29,7 +30,7 @@ fi
 . shell-git-config
 
 GETOPT_ALLOW_UNKNOWN=
-TEMP=`getopt -n $PROG -o 'g:,d,l,m,r' -l 'global:,no-check-kernel-config,list,kconfig-merge,kconfig-requires,delete,usage' -- "$@"` ||
+TEMP=`getopt -n $PROG -o 'g:,d,l,L,m,r' -l 'global:,no-check-kernel-config,list,long-list,kconfig-merge,kconfig-requires,delete,usage' -- "$@"` ||
 	show_usage
 eval set -- "$TEMP"
 
@@ -37,6 +38,7 @@ global=
 show_kconfig_requires=
 merge_kconfig_requires=
 list_profiles=
+long_list_profiles=
 delete_profile=
 
 while :; do
@@ -49,6 +51,9 @@ while :; do
 			;;
 		-l|--list)
 			list_profiles=1
+			;;
+		-L|--long-list)
+			long_list_profiles=1
 			;;
 		-m|--kconfig-merge)
 			merge_kconfig_requires=1
@@ -103,6 +108,124 @@ if [ -n "$list_profiles" ]; then
 				-e 's/^vm\.(.+)\..+$/\1/p' |
 			sort -u
 	fi
+	exit
+elif [ -n "$long_list_profiles" ]; then
+	. "@PREFIX@/vm-sh-config"
+
+	vm_profiles=
+	git_config_get vm_profiles "$vm_config_file" "vm.profiles"
+
+	profiles="$(
+		git_config_list "$vm_config_file" |
+			sed -n -r \
+				-e 's/^([^=]+)=.*$/\1/' \
+				-e 's/^vm\.(.+)\..+$/\1/p' |
+			sort -u
+	)"
+
+	setmax() {
+		local sz lenvar="$1" value="$2"
+		eval "sz=\"\${$lenvar:-0}\""
+		[ "$sz" -ge "${#value}" ] ||
+			sz=${#value}
+		eval "$lenvar=\"\$sz\""
+	}
+
+	rows=0
+	cols=6
+	setinfo()
+	{
+		local i=0
+		while [ $i -lt $cols ]; do
+			eval "info_${i}_$rows=\"\$$(($i+1))\""
+			i=$(($i+1))
+		done
+		rows=$(($rows+1))
+	}
+
+	setinfo "NAME" "PID" "STATUS" "RSS" "FSSIZE" "ROOTFS"
+
+	for vm_profile in $profiles; do
+		if [ "$#" -gt 0 ]; then
+			found=
+			for profile; do
+				[ "$vm_profile" != "$profile" ] ||
+					found=1
+			done
+
+			[ -n "$found" ] ||
+				continue
+		fi
+
+		pid=-
+		[ ! -e "$vm_profiles/$vm_profile/pid" ] ||
+			read -r pid < "$vm_profiles/$vm_profile/pid"
+
+		rss=0
+		status=stopped
+		if [ "$pid" != '-' ]; then
+			status=dead
+			! kill -0 "$pid" >/dev/null 2>&1 ||
+				status=running
+
+			if [ "$status" = running ]; then
+				rss=$(ps h -o rss "$pid")
+				rss_suffix=K
+				for s in M G T; do
+					if [ $rss -gt 10240 ]; then
+						rss="$(($rss / 1024))"
+						rss_suffix="$s"
+					fi
+				done
+				rss="$rss$rss_suffix"
+			fi
+		fi
+
+		fssize='missed'
+		rootfs=
+		git_config_get rootfs "$vm_config_file" "vm.$vm_profile.rootfs"
+		subst_globals rootfs "$rootfs"
+
+		if [ -n "$rootfs" ]; then
+			if [ -d "$rootfs" ]; then
+				fssize="$(du -sbh "$rootfs")"
+				fssize="${fssize%%[ 	]*}"
+			fi
+
+			[ -n "${rootfs##$HOME/*}" ] ||
+				rootfs="~/${rootfs#$HOME/}"
+		else
+			rootfs='-'
+		fi
+
+		setinfo "$vm_profile" "$pid" "$status" "$rss" "$fssize" "$rootfs"
+	done
+
+	row=0
+	while [ $row -lt $rows ]; do
+		col=0
+		while [ $col -lt $cols ]; do
+			eval "setmax info_${col}_len \"\$info_${col}_${row}\""
+			col=$(($col+1))
+		done
+		row=$(($row+1))
+	done
+
+	row=0
+	while [ $row -lt $rows ]; do
+		col=0
+		while [ $col -lt $cols ]; do
+			eval "n=\"\$info_${col}_len\""
+			eval "v=\"\$info_${col}_${row}\""
+			[ "$col" = 0 ] ||
+				printf '\t'
+			printf '%-'$n's' "$v"
+			col=$(($col+1))
+		done
+		printf '\n'
+		row=$(($row+1))
+	done
+
 	exit
 elif [ -n "$delete_profile" ]; then
 	vm_profiles=
