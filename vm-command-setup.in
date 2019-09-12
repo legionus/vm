@@ -132,9 +132,10 @@ elif [ -n "$long_list_profiles" ]; then
 	}
 
 	rows=0
-	cols=6
+	cols=0
 	setinfo()
 	{
+		cols="$#"
 		local i=0
 		while [ $i -lt $cols ]; do
 			eval "info_${i}_$rows=\"\$$(($i+1))\""
@@ -143,7 +144,7 @@ elif [ -n "$long_list_profiles" ]; then
 		rows=$(($rows+1))
 	}
 
-	setinfo "NAME" "PID" "STATUS" "RSS" "FSSIZE" "ROOTFS"
+	setinfo "NAME" "PID" "STATUS" "ELAPSED" "RSS" "FSSIZE" "ROOTFS"
 
 	for vm_profile in $profiles; do
 		if [ "$#" -gt 0 ]; then
@@ -157,18 +158,24 @@ elif [ -n "$long_list_profiles" ]; then
 				continue
 		fi
 
-		pid=-
+		pid='-'
 		[ ! -e "$vm_profiles/$vm_profile/pid" ] ||
 			read -r pid < "$vm_profiles/$vm_profile/pid"
 
+		elapsed='-'
 		rss=0
 		status=stopped
+
 		if [ "$pid" != '-' ]; then
 			status=dead
+
 			! kill -0 "$pid" >/dev/null 2>&1 ||
 				status=running
 
 			if [ "$status" = running ]; then
+				elapsed=$(ps h -o etime "$pid")
+				elapsed="${elapsed##* }"
+
 				rss=$(ps h -o rss "$pid")
 				rss_suffix=K
 				for s in M G T; do
@@ -183,10 +190,12 @@ elif [ -n "$long_list_profiles" ]; then
 
 		fssize='missed'
 		rootfs=
+
 		git_config_get rootfs "$vm_config_file" "vm.$vm_profile.rootfs"
-		subst_globals rootfs "$rootfs"
 
 		if [ -n "$rootfs" ]; then
+			subst_globals rootfs "$rootfs"
+
 			if [ -d "$rootfs" ]; then
 				fssize="$(du -sbh "$rootfs")"
 				fssize="${fssize%%[ 	]*}"
@@ -198,7 +207,7 @@ elif [ -n "$long_list_profiles" ]; then
 			rootfs='-'
 		fi
 
-		setinfo "$vm_profile" "$pid" "$status" "$rss" "$fssize" "$rootfs"
+		setinfo "$vm_profile" "$pid" "$status" "$elapsed" "$rss" "$fssize" "$rootfs"
 	done
 
 	row=0
