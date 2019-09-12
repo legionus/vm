@@ -62,7 +62,7 @@ subst_globals rootfs "$rootfs"
 [ -d "$rootfs" ] ||
 	fatal "Rootfs not found"
 
-[ "$#" -eq 0 ] ||
+[ "$#" -gt 0 ] ||
 	set -- /bin/bash
 
 {
