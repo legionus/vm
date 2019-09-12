@@ -246,4 +246,8 @@ PS1=[shell \W]#
 VM_PROFILE=
 EOF
 
-cp ${verbose-} -- "@LIBEXECDIR@/init" ./virt/init
+cp_args=
+[ "$(stat -c '%D' "@LIBEXECDIR@" ./virt |sort -u |wc -l)" != 1 ] ||
+	cp_args="-l"
+
+cp -f ${verbose-} $cp_args -- "@LIBEXECDIR@/init" ./virt/init
