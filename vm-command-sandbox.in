@@ -62,13 +62,11 @@ subst_globals rootfs "$rootfs"
 [ -d "$rootfs" ] ||
 	fatal "Rootfs not found"
 
-[ "$#" -gt 0 ] ||
+[ "$#" -eq 0 ] ||
 	set -- /bin/bash
 
 {
-	printf '#!/bin/sh\n'
-	printf 'export PS1="[sandbox]# "\n'
-	printf 'export VM_PROFILE="%s"\n' "$vm_profile"
+	printf '#!/bin/sh -i\n'
 	printf 'cd "%s"\n' "/host/$cwddir"
 	printf 'exec'
 	printf ' "%s"' "$@"

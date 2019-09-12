@@ -224,7 +224,7 @@ git_config_append "$vm_config_file" "vm.$vm_profile.virtfs" "/:hostfs"
 mkdir ${verbose-} -p -- "$dest_dir"
 cd "$dest_dir"
 
-for n in dev etc home host proc root sys tmp var var/lib virt virt/home; do
+for n in dev etc home host proc root sys tmp var var/lib virt virt/home virt/etc; do
 	mkdir ${verbose-} -p -- "./$n"
 done
 
@@ -237,5 +237,13 @@ done
 	printf 'root:x:0:0:root:/root:/bin/sh\n' > ./etc/passwd
 [ -f ./etc/group ] ||
 	printf 'root:x:0:\n' > ./etc/group
+
+cat >./virt/etc/environ<<EOF
+PATH=/sbin:/usr/sbin:/usr/local/sbin:/lib/initrd/bin:/bin:/usr/bin:/usr/local/bin
+TERM=linux
+HOME=/virt/home
+PS1=[shell \W]# 
+VM_PROFILE=
+EOF
 
 cp ${verbose-} -- "@LIBEXECDIR@/init" ./virt/init

@@ -25,7 +25,8 @@ CFLAGS = -Wall -Wextra -W -Wshadow -Wcast-align \
 	-Wwrite-strings -Wconversion -Waggregate-return -Wstrict-prototypes \
 	-Wmissing-prototypes -Wmissing-declarations -Wmissing-noreturn \
 	-Wmissing-format-attribute -Wredundant-decls -Wdisabled-optimization \
-	-Wno-pointer-arith
+	-Wno-pointer-arith \
+	-Os
 
 CP = cp -a
 INSTALL = install

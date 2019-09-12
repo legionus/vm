@@ -71,8 +71,17 @@ vm_check_kernel_config
 vm_profiles=
 git_config_get vm_profiles "$vm_config_file" "vm.profiles"
 
+rootfs=
+git_config_get rootfs "$vm_config_file" "vm.$vm_profile.rootfs"
+subst_globals rootfs "$rootfs"
+
 dest_dir="$vm_profiles/$vm_profile"
 mkdir $verbose -p -- "$dest_dir"
+
+[ ! -f "$rootfs/virt/etc/environ" ] ||
+	sed -i \
+		-e "s#^VM_PROFILE=.*#VM_PROFILE=$vm_profile#g" \
+		"$rootfs/virt/etc/environ"
 
 if [ -n "$qemu_logfile" ]; then
 	subst_globals qemu_logfile "$qemu_logfile"

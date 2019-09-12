@@ -31,20 +31,25 @@
 		} while(0)
 
 #define MODULES_FILE "/virt/etc/modules"
+#define ENV_FILE     "/virt/etc/environ"
 #define SANDBOX_EXEC "/virt/sandbox.sh"
 #define SHELL_EXEC   "/bin/sh"
 
 static const char *sandbox_prog[] = { SANDBOX_EXEC, NULL };
 static const char *shell_prog[]   = { SHELL_EXEC,   NULL };
 
-static const char *const run_env[] = {
+static char **env;
+
+static const char *default_env[] = {
 	"PATH=/sbin:/usr/sbin:/usr/local/sbin:/lib/initrd/bin:/bin:/usr/bin:/usr/local/bin",
 	"TERM=linux",
 	"HOME=/virt/home",
 	"PS1=[shell]# ",
 	NULL
 };
-
+#ifndef _GNU_SOURCE
+extern char **environ;
+#endif
 extern long init_module(void *, unsigned long, const char *);
 
 static sig_atomic_t got_ECHILD;
@@ -83,7 +88,7 @@ run(const char *cmd[])
 	}
 	if (pid == 0)
 	{
-		execve(exe, (char *const *) cmd, (char *const *) run_env);
+		execve(exe, (char *const *) cmd, env);
 		error(0, errno, "%s: execve:", exe);
 		_exit(EXIT_FAILURE);
 	}
@@ -274,6 +279,51 @@ load_modules(void)
 	return rc;
 }
 
+static int
+load_env(void)
+{
+	char *envvar = NULL;
+	char *line = NULL;
+	size_t len = 0;
+	ssize_t nread;
+
+	FILE *f = NULL;
+
+	if (access(ENV_FILE, R_OK) != 0) {
+		printf("%s not found. Nothing to do ...\n", ENV_FILE);
+		return 0;
+	}
+
+	if ((f = fopen(ENV_FILE, "r")) == NULL) {
+		perror("fopen");
+		return 1;
+	}
+
+	while ((nread = getline(&line, &len, f)) != -1) {
+		if (nread == 0 || line[0] == '\n')
+			continue;
+
+		if (line[nread-1] == '\n')
+			nread--;
+
+		envvar = strndup(line, (size_t) nread);
+
+		if (!envvar) {
+			perror("strndup");
+			return 1;
+		}
+
+		putenv(envvar);
+	}
+
+	free(line);
+	fclose(f);
+
+	env = environ;
+
+	return 0;
+}
+
 int
 main(void)
 {
@@ -285,7 +335,12 @@ main(void)
 	SETSIG(sa, SIGQUIT, SIG_IGN,      SA_RESTART);
 	SETSIG(sa, SIGCHLD, chld_handler, SA_RESTART);
 
+	env = (char **) default_env;
+
 	if (load_modules())
+		return 1;
+
+	if (load_env())
 		return 1;
 
 	do_mounts();
