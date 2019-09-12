@@ -512,7 +512,7 @@ vm_read_config() {
 		"_process_$name"
 	done
 
-	local args="$qemu_args -append '$qemu_cmdline'"
+	local args="$qemu_args -pidfile '$vm_profiles/$vm_profile/pid' -append '$qemu_cmdline'"
 	quote_shell_args qemu_args "$args"
 
 	export qemu_exec qemu_args qemu_cmdline
