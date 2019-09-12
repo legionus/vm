@@ -52,6 +52,14 @@ parameter \
 	'Specifies console type'
 
 parameter \
+	'qemu_time' \
+	'one' \
+	'time' \
+	'time' \
+	'localtime' \
+	'Specifies time settings'
+
+parameter \
 	'qemu_network' \
 	'list' \
 	'network' \

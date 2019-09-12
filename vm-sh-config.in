@@ -320,6 +320,17 @@ _process_qemu_tempdir() {
 	export TMPDIR="$v"
 }
 
+_process_qemu_time() {
+	[ -n "$qemu_time" ] ||
+		return 0
+	case "$qemu_time" in
+		utc|localtime|[0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9]*)
+			qemu_time="base=$qemu_time,clock=host"
+			;;
+	esac
+	qemu_args="$qemu_args -rtc '$qemu_time'"
+}
+
 _process_qemu_watchdog() {
 	[ -n "$qemu_watchdog" ] ||
 		return 0
