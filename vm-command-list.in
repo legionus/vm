@@ -1,0 +1,217 @@
+#!/bin/sh -efu
+
+if [ -n "${VM_USAGE-}" ]; then
+	printf 'list [option] [<profile> ...]\n'
+	exit 0
+fi
+
+if [ -n "${VM_HELP-}" ]; then
+	cat <<-EOF
+	Print a list of instances on the host. This is restricted to instances started
+	by the current user, as it looks in the .vm folder.
+	EOF
+	exit 0
+fi
+
+if [ -n "${VM_HELP_OPTIONS-}" ]; then
+	cat <<-EOF
+	  -p, --profiles              shows information about profiles;
+	  -i, --run                   lists all running instances;
+	  --usage                     shows the help message of subcommand.
+	EOF
+	exit 0
+fi
+
+. shell-error
+. shell-git-config
+
+GETOPT_ALLOW_UNKNOWN=
+TEMP=`getopt -n $PROG -o 'i,p' -l 'run,profiles,usage' -- "$@"` ||
+	show_usage
+eval set -- "$TEMP"
+
+list_profiles=
+list_running=
+
+while :; do
+	case "$1" in
+		-p|--profiles)
+			list_profiles=1
+			;;
+		-i|--run)
+			list_running=1
+			;;
+		--usage)
+			show_command_help
+			;;
+		--) shift; break
+			;;
+	esac
+	shift
+done
+
+if [ -n "$list_profiles" ]; then
+	if [ "$#" -gt 0 ]; then
+		git_config_list "$vm_config_file" |
+			sort |
+		while read -r s; do
+			n="${s%%=*}"
+			n="${n#vm.}"
+			n="${n%.*}"
+
+			found=
+			for profile; do
+				[ "$n" != "$profile" ] ||
+					found=1
+			done
+
+			[ -n "$found" ] ||
+				continue
+
+			if [ -z "${vm-}" ] || [ "$vm" != "$n" ]; then
+				printf '[vm "%s"]\n' "$n"
+				vm="$n"
+			fi
+
+			v="${s#vm.$n.}"
+
+			[ -z "${v##\#*}" ] ||
+				printf '  %10s = %s\n' "${v%%=*}" "${v#*=}"
+		done
+	else
+		git_config_list "$vm_config_file" |
+			sed -n -r \
+				-e 's/^([^=]+)=.*$/\1/' \
+				-e 's/^vm\.(.+)\..+$/\1/p' |
+			sort -u
+	fi
+	exit
+fi
+
+. "@PREFIX@/vm-sh-config"
+
+vm_profiles=
+git_config_get vm_profiles "$vm_config_file" "vm.profiles"
+
+profiles="$(
+	git_config_list "$vm_config_file" |
+		sed -n -r \
+			-e 's/^([^=]+)=.*$/\1/' \
+			-e 's/^vm\.(.+)\..+$/\1/p' |
+		sort -u
+)"
+
+setmax() {
+	local sz lenvar="$1" value="$2"
+	eval "sz=\"\${$lenvar:-0}\""
+	[ "$sz" -ge "${#value}" ] ||
+		sz=${#value}
+	eval "$lenvar=\"\$sz\""
+}
+
+rows=0
+cols=0
+setinfo()
+{
+	cols="$#"
+	local i=0
+	while [ $i -lt $cols ]; do
+		eval "info_${i}_$rows=\"\$$(($i+1))\""
+		i=$(($i+1))
+	done
+	rows=$(($rows+1))
+}
+
+setinfo "NAME" "PID" "STATUS" "ELAPSED" "RSS" "FSSIZE" "ROOTFS"
+
+for vm_profile in $profiles; do
+	if [ "$#" -gt 0 ]; then
+		found=
+		for profile; do
+			[ "$vm_profile" != "$profile" ] ||
+				found=1
+		done
+
+		[ -n "$found" ] ||
+			continue
+	fi
+
+	pid='-'
+	[ ! -e "$vm_profiles/$vm_profile/pid" ] ||
+		read -r pid < "$vm_profiles/$vm_profile/pid"
+
+	elapsed='-'
+	rss=0
+	status='stopped'
+
+	if [ "$pid" != '-' ]; then
+		status='dead'
+
+		! kill -0 "$pid" >/dev/null 2>&1 ||
+			status='running'
+
+		if [ "$status" = 'running' ]; then
+			elapsed=$(ps h -o etime "$pid")
+			elapsed="${elapsed##* }"
+
+			rss=$(ps h -o rss "$pid")
+			rss_suffix=K
+			for s in M G T; do
+				if [ $rss -gt 10240 ]; then
+					rss="$(($rss / 1024))"
+					rss_suffix="$s"
+				fi
+			done
+			rss="$rss$rss_suffix"
+		fi
+	fi
+
+	[ -z "$list_running" ] || [ "$status" = 'running' ] ||
+		continue
+
+	fssize='missed'
+	rootfs=
+
+	git_config_get rootfs "$vm_config_file" "vm.$vm_profile.rootfs"
+
+	if [ -n "$rootfs" ]; then
+		subst_globals rootfs "$rootfs"
+
+		if [ -d "$rootfs" ]; then
+			fssize="$(du -sbh "$rootfs")"
+			fssize="${fssize%%[ 	]*}"
+		fi
+
+		[ -n "${rootfs##$HOME/*}" ] ||
+			rootfs="~/${rootfs#$HOME/}"
+	else
+		rootfs='-'
+	fi
+
+	setinfo "$vm_profile" "$pid" "$status" "$elapsed" "$rss" "$fssize" "$rootfs"
+done
+
+row=0
+while [ $row -lt $rows ]; do
+	col=0
+	while [ $col -lt $cols ]; do
+		eval "setmax info_${col}_len \"\$info_${col}_${row}\""
+		col=$(($col+1))
+	done
+	row=$(($row+1))
+done
+
+row=0
+while [ $row -lt $rows ]; do
+	col=0
+	while [ $col -lt $cols ]; do
+		eval "n=\"\$info_${col}_len\""
+		eval "v=\"\$info_${col}_${row}\""
+		[ "$col" = 0 ] ||
+			printf '\t'
+		printf '%-'$n's' "$v"
+		col=$(($col+1))
+	done
+	printf '\n'
+	row=$(($row+1))
+done

@@ -43,6 +43,7 @@ HELPERS     = \
     vm-command-debug \
     vm-command-init \
     vm-command-kern \
+    vm-command-list \
     vm-command-run \
     vm-command-sandbox \
     vm-command-setup
