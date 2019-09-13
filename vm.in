@@ -105,13 +105,6 @@ print_version() {
 	exit
 }
 
-workdir=
-exit_handler() {
-	trap - EXIT
-	rm -rf -- "$workdir"
-	exit "$1"
-}
-
 getopt_args=
 generate_getopt_args() {
 	local n c
@@ -202,8 +195,8 @@ verbose "Config file: $vm_config_file"
 
 cwddir="$(readlink -ev .)"
 
+workdir=
 create_temporary workdir
-set_cleanup_handler exit_handler
 
 export vm_params vm_dryrun
 export vm_config_file
