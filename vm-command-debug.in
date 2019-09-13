@@ -1,41 +1,20 @@
 #!/bin/sh -efu
 
-if [ -n "${VM_USAGE-}" ]; then
-	printf 'debug <profile>\n'
+case "${VM_HELP-}" in
+	USAGE)
+		printf 'debug <profile>\n'
+		;;
+	SUMMARY)
+		printf 'Shows the configuration and the command to be executed\n'
+		;;
+	DESCRIPTION)
+		;;
+	OPTIONS)
+		;;
+esac
+
+[ -z "${VM_HELP-}" ] ||
 	exit 0
-fi
-
-if [ -n "${VM_HELP-}" ]; then
-	printf 'Shows the configuration and the command to be executed\n'
-	exit 0
-fi
-
-if [ -n "${VM_HELP_OPTIONS-}" ]; then
-	cat <<-EOF
-	  --no-check-kernel-config    do not check kernel .config;
-	  --usage                     shows the help message of subcommand.
-	EOF
-	exit 0
-fi
-
-GETOPT_ALLOW_UNKNOWN=
-TEMP=`getopt -n $PROG -o '' -l 'no-check-kernel-config,usage' -- "$@"` ||
-	show_usage
-eval set -- "$TEMP"
-
-while :; do
-	case "$1" in
-		--no-check-kernel-config)
-			no_check_kernel_config=1
-			;;
-		--usage)
-			show_command_help
-			;;
-		--) shift; break
-			;;
-	esac
-	shift
-done
 
 [ "$#" -gt 0 ] ||
 	show_usage "Profile name required"

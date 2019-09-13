@@ -1,0 +1,51 @@
+#!/bin/sh -efu
+
+case "${VM_HELP-}" in
+	USAGE)
+		printf 'help <command>\n'
+		;;
+	SUMMARY)
+		printf 'Displays help information about <command>\n'
+		;;
+	DESCRIPTION)
+		;;
+	OPTIONS)
+		;;
+esac
+
+[ -z "${VM_HELP-}" ] ||
+	exit 0
+
+[ "$#" -gt 0 ] ||
+	show_help
+
+[ "$#" -lt 2 ] ||
+	show_usage "Too many arguments"
+
+command="$1"
+shift
+
+[ -x "@PREFIX@/vm-command-$command" ] ||
+	fatal "Unknown command: $command"
+
+prefix='Usage'
+VM_HELP=USAGE "@PREFIX@/vm-command-$command" |
+while read -r m; do
+	printf '%s: %s %s\n' "$prefix" "$PROG" "$m"
+	prefix='   or'
+done
+printf '\n'
+
+desc="$(VM_HELP=DESCRIPTION "@PREFIX@/vm-command-$command")"
+[ -n "$desc" ] ||
+	desc="$(VM_HELP=SUMMARY "@PREFIX@/vm-command-$command")."
+printf '%s\n' "$desc"
+printf '\n'
+
+opts="$(VM_HELP=OPTIONS "@PREFIX@/vm-command-$command")"
+if [ -n "$opts" ]; then
+	printf 'Options:\n'
+	printf '%s\n\n' "$opts"
+fi
+
+printf '%s\n\n' "Report bugs to author."

@@ -41,6 +41,7 @@ DATA        = \
 HELPERS     = \
     vm-sh-config \
     vm-command-debug \
+    vm-command-help \
     vm-command-init \
     vm-command-kern \
     vm-command-list \

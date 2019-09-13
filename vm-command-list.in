@@ -1,32 +1,34 @@
 #!/bin/sh -efu
 
-if [ -n "${VM_USAGE-}" ]; then
-	printf 'list [option] [<profile> ...]\n'
-	exit 0
-fi
+case "${VM_HELP-}" in
+	USAGE)
+		printf 'list [option] [<profile> ...]\n'
+		;;
+	SUMMARY)
+		printf 'Prints a list of instances on the host\n'
+		;;
+	DESCRIPTION)
+		cat <<-EOF
+		Print a list of running instances on the host. This is restricted to instances started
+		by the current user, as it looks in the ~/.vm folder in your home directory.
+		EOF
+		;;
+	OPTIONS)
+		cat <<-EOF
+		  -p, --profiles              shows information about profiles;
+		  -i, --run                   lists all running instances.
+		EOF
+		;;
+esac
 
-if [ -n "${VM_HELP-}" ]; then
-	cat <<-EOF
-	Print a list of instances on the host. This is restricted to instances started
-	by the current user, as it looks in the .vm folder.
-	EOF
+[ -z "${VM_HELP-}" ] ||
 	exit 0
-fi
-
-if [ -n "${VM_HELP_OPTIONS-}" ]; then
-	cat <<-EOF
-	  -p, --profiles              shows information about profiles;
-	  -i, --run                   lists all running instances;
-	  --usage                     shows the help message of subcommand.
-	EOF
-	exit 0
-fi
 
 . shell-error
 . shell-git-config
 
 GETOPT_ALLOW_UNKNOWN=
-TEMP=`getopt -n $PROG -o 'i,p' -l 'run,profiles,usage' -- "$@"` ||
+TEMP=`getopt -n $PROG -o 'i,p' -l 'run,profiles' -- "$@"` ||
 	show_usage
 eval set -- "$TEMP"
 
@@ -40,9 +42,6 @@ while :; do
 			;;
 		-i|--run)
 			list_running=1
-			;;
-		--usage)
-			show_command_help
 			;;
 		--) shift; break
 			;;

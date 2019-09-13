@@ -1,42 +1,26 @@
 #!/bin/sh -efu
 
-if [ -n "${VM_USAGE-}" ]; then
-	printf 'sandbox [options] <profile>\n'
-	printf 'sandbox [options] <profile> PROG [ARGS...]\n'
+case "${VM_HELP-}" in
+	USAGE)
+		printf 'sandbox <profile>\n'
+		printf 'sandbox <profile> PROG [ARGS...]\n'
+		;;
+	SUMMARY)
+		printf 'Runs a command in a sandboxed guest\n'
+		;;
+	DESCRIPTION)
+		cat <<-EOF
+		Run a command in a sandboxed guest. vm will inject a special init binary which
+		will do an initial setup of the guest Linux and then lauch a shell script with
+		the specified command. Upon this command ending, the guest will be shutdown.
+		EOF
+		;;
+	OPTIONS)
+		;;
+esac
+
+[ -z "${VM_HELP-}" ] ||
 	exit 0
-fi
-
-if [ -n "${VM_HELP-}" ]; then
-	printf 'Runs a command in a sandboxed guest\n'
-	exit 0
-fi
-
-if [ -n "${VM_HELP_OPTIONS-}" ]; then
-	cat <<-EOF
-	  --no-check-kernel-config    do not check kernel .config;
-	  --usage                     shows the help message of subcommand.
-	EOF
-	exit 0
-fi
-
-GETOPT_ALLOW_UNKNOWN=
-TEMP=`getopt -n $PROG -o '' -l 'no-check-kernel-config,usage' -- "$@"` ||
-	show_usage
-eval set -- "$TEMP"
-
-while :; do
-	case "$1" in
-		--no-check-kernel-config)
-			no_check_kernel_config=1
-			;;
-		--usage)
-			show_command_help
-			;;
-		--) shift; break
-			;;
-	esac
-	shift
-done
 
 if [ -z "${vm_profile-}" ]; then
 	[ "$#" -gt 0 ] ||

@@ -22,7 +22,7 @@ show_help() {
 	printf 'Usage: %s [options] <command> [<profile>] [command-options]\n' "$PROG"
 
 	for cmd; do
-		VM_USAGE=1 "$cmd" |
+		VM_HELP=USAGE "$cmd" |
 		while read -r m; do
 			printf '   or: %s %s\n' "$PROG" "$m"
 		done
@@ -39,14 +39,14 @@ show_help() {
 
 	for cmd; do
 		n="${cmd##*/vm-command-}"
-		m="$(VM_HELP=1 "$cmd")"
+		m="$(VM_HELP=SUMMARY "$cmd")"
 
 		printf ' %10s - %s;\n' "$n" "$m"
 	done
 
 	for cmd; do
 		n="${cmd##*/vm-command-}"
-		m="$(VM_HELP_OPTIONS=1 "$cmd")"
+		m="$(VM_HELP=OPTIONS "$cmd")"
 
 		[ -n "${m:+1}" ] ||
 			continue
@@ -90,26 +90,6 @@ show_help() {
 Report bugs to author.
 
 EOF
-	exit
-}
-
-show_command_help() {
-	local prefix='Usage'
-	VM_USAGE=1 "@PREFIX@/vm-command-$command" |
-	while read -r m; do
-		printf '%s: %s %s\n' "$prefix" "$PROG" "$m"
-		prefix='   or'
-	done
-	printf '\n'
-
-	VM_HELP=1 "@PREFIX@/vm-command-$command"
-	printf '\n'
-
-	printf 'Options:\n'
-	VM_HELP_OPTIONS=1 "@PREFIX@/vm-command-$command"
-	printf '\n'
-
-	printf '%s\n\n' "Report bugs to author."
 	exit
 }
 
@@ -179,9 +159,8 @@ set_cmdline_variable() {
 
 . "@PREFIX@/vm-options"
 
-
 GETOPT_ALLOW_UNKNOWN=1
-TEMP=`generate_getopt_args; getopt -n $PROG -o 'h,v,V' -l "${getopt_args}dry-run,help,verbose,version" -- "$@"` ||
+TEMP=`generate_getopt_args; getopt -n $PROG -o 'h,v,V' -l "${getopt_args}dry-run,no-check-kernel-config,help,verbose,version" -- "$@"` ||
 	show_usage
 eval set -- "$TEMP"
 
@@ -190,6 +169,9 @@ while :; do
 	case "$1" in
 		--dry-run)
 			vm_dryrun=echo
+			;;
+		--no-check-kernel-config)
+			no_check_kernel_config=1
 			;;
 		-v|--verbose) verbose=-v
 			;;
