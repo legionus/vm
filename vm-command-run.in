@@ -37,13 +37,15 @@ while :; do
 	shift
 done
 
-[ "$#" -gt 0 ] ||
-	show_usage "Profile name required"
+if [ -z "${vm_profile-}" ]; then
+	[ "$#" -gt 0 ] ||
+		show_usage "Profile name required"
 
-vm_profile="$1"
-shift
+	vm_profile="$1"
+	shift
 
-export vm_profile
+	export vm_profile
+fi
 
 . shell-git-config
 
