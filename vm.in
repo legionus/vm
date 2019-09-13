@@ -201,5 +201,6 @@ create_temporary workdir
 export vm_params vm_dryrun
 export vm_config_file
 export verbose cwddir
+unset VM_HELP
 
 . "@PREFIX@/vm-command-$command"
