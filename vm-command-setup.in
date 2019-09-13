@@ -169,7 +169,7 @@ git_config_location_exists "$vm_config_file" "vm.$vm_profile" ||
 git_config_set "$vm_config_file" "vm.$vm_profile.rootfs" "$config_dest_dir"
 [ -z "${qemu_kernel-}" ] ||
 	git_config_set "$vm_config_file" "vm.$vm_profile.kernel" "$qemu_kernel"
-git_config_set "$vm_config_file" "vm.$vm_profile.append" "init=virt/init root=/dev/root rootflags=rw,trans=virtio,version=9p2000.L,setuid=0 rootfstype=9p rw"
+git_config_set "$vm_config_file" "vm.$vm_profile.append" "init=virt/init rootflags=trans=virtio,version=9p2000.L rootfstype=9p rw"
 
 git_config_unset  "$vm_config_file" "vm.$vm_profile.virtfs"
 git_config_append "$vm_config_file" "vm.$vm_profile.virtfs" "@vm.rootfs@:/dev/root"
