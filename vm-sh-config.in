@@ -102,7 +102,7 @@ _process_qemu_cpu() {
 _process_qemu_cpus()    {
 	[ -n "$qemu_cpus" ] ||
 		return 0
-	[ -n "${qemu_cpus##*[!0-9]*}" ] ||
+	[ -n "${qemu_cpus##*[!,],[!,]*}" ] && [ -n "${qemu_cpus##*[!0-9]*}" ] ||
 		fatal "Wrong value: $qemu_cpus"
 	qemu_args="$qemu_args -smp '$qemu_cpus'"
 }
