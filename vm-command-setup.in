@@ -383,3 +383,4 @@ cp_args=
 	cp_args="-l"
 
 cp -f ${verbose-} $cp_args -- "@LIBEXECDIR@/init" ./virt/init
+cp -f ${verbose-} $cp_args -- "@LIBEXECDIR@/init.sh" ./virt/init.sh
