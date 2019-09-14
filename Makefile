@@ -13,12 +13,14 @@ man1dir    ?= $(mandir)/man1
 tmpdir     ?= /tmp
 prefix     ?= $(datadir)/$(PROJECT)
 DESTDIR    ?=
+mklocal    =
 
 ifdef MKLOCAL
 prefix     = $(CURDIR)
 bindir     = $(CURDIR)
 sbindir    = $(CURDIR)
 libexecdir = $(CURDIR)
+mklocal    = 1
 endif
 
 CFLAGS = -Wall -Wextra -W -Wshadow -Wcast-align \
@@ -67,6 +69,7 @@ all: $(SUBDIRS) $(TARGETS)
 		-e 's,@SBINDIR@,$(sbindir),g' \
 		-e 's,@TMPDIR@,$(tmpdir),g' \
 		-e 's,@LIBEXECDIR@,$(libexecdir),g' \
+		-e 's,@MKLOCAL@,$(mklocal),g' \
 		<$< >$@
 	$(TOUCH_R) $< $@
 	chmod --reference=$< $@

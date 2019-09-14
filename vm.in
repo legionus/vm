@@ -1,5 +1,8 @@
 #!/bin/sh -efu
 
+[ -z "@MKLOCAL@" ] ||
+	export PATH="@PREFIX@/libshell:${PATH#@PREFIX@/libshell:}"
+
 . shell-args
 . shell-getopt
 . shell-signal

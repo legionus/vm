@@ -1,5 +1,8 @@
 #!/bin/sh -efu
 
+[ -z "@MKLOCAL@" ] ||
+	export PATH="@PREFIX@/libshell:${PATH#@PREFIX@/libshell:}"
+
 case "${VM_HELP-}" in
 	USAGE)
 		printf 'init\n'

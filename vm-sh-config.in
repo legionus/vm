@@ -3,6 +3,9 @@
 if [ -z "${__include_vm_sh_config-}" ]; then
 __include_vm_sh_config=1
 
+[ -z "@MKLOCAL@" ] ||
+	export PATH="@PREFIX@/libshell:${PATH#@PREFIX@/libshell:}"
+
 . shell-error
 . shell-var
 . shell-quote
