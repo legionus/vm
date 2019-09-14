@@ -67,12 +67,21 @@ mkdir $verbose -p -- "$dest_dir"
 		-e "s#^VM_PROFILE=.*#VM_PROFILE=$vm_profile#g" \
 		"$rootfs/virt/etc/environ"
 
+set --
+
+i=0
+while [ "$i" -lt "$qemu_args" ]; do
+	eval "v=\"\$qemu_args_$i\""
+	i=$(($i + 1))
+	set -- "$@" "$v"
+done
+
 if [ -n "$qemu_logfile" ]; then
 	subst_globals qemu_logfile "$qemu_logfile"
 	buf="$workdir/qemu.exec.buf"
 	{
 		rc=0
-		eval "${vm_dryrun:+debug_exec} $qemu_exec $qemu_args" ||
+		${vm_dryrun:+debug_exec} "$qemu_exec" "$@" ||
 			rc=$?
 		printf '%s\n' "$rc" > "$buf"
 	} |
@@ -82,4 +91,4 @@ if [ -n "$qemu_logfile" ]; then
 	exit $rc
 fi
 
-eval "${vm_dryrun:+debug_exec} $qemu_exec $qemu_args"
+${vm_dryrun:+debug_exec} "$qemu_exec" "$@"

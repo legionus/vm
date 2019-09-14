@@ -8,13 +8,13 @@ __include_vm_sh_config=1
 
 . shell-error
 . shell-var
-. shell-quote
 . shell-cmdline
 . shell-git-config
 
 no_check_kernel_config=
 kernel_dir=
-vm_check_kernel_config() {
+vm_check_kernel_config()
+{
 	[ -z "$no_check_kernel_config" ] && [ -n "$kernel_dir" ] && [ -s "$kernel_dir/.config" ] ||
 		return 0
 
@@ -76,7 +76,18 @@ subst_globals()
 	eval "$__retn=\"\$__retv\""
 }
 
-_append_cmdline() {
+qemu_args=0
+qemu_args()
+{
+	while [ "$#" -gt 0 ]; do
+		eval "qemu_args_$qemu_args=\"\$1\""
+		qemu_args=$(($qemu_args + 1))
+		shift
+	done
+}
+
+_append_cmdline()
+{
 	local n="$1" v="${2-}"
 	[ -n "${qemu_cmdline_names##* $n *}" ] ||
 		return 0
@@ -84,47 +95,54 @@ _append_cmdline() {
 	qemu_cmdline="${qemu_cmdline:+$qemu_cmdline }$n${v:+=$v}"
 }
 
-_process_qemu_arch() {
+_process_qemu_arch()
+{
 	qemu_exec="qemu-system-$qemu_arch"
 	"$qemu_exec" -version >/dev/null 2>&1 ||
 		fatal "Unsupported arch: $qemu_arch"
 }
 
-_process_qemu_machine() {
+_process_qemu_machine()
+{
 	[ -n "$qemu_machine" ] ||
 		return 0
-	qemu_args="$qemu_args -machine '$qemu_machine'"
+	qemu_args -machine "$qemu_machine"
 }
 
-_process_qemu_cpu() {
+_process_qemu_cpu()
+{
 	[ -n "$qemu_cpu" ] ||
 		return 0
-	qemu_args="$qemu_args -cpu '$qemu_cpu'"
+	qemu_args -cpu "$qemu_cpu"
 }
 
-_process_qemu_cpus()    {
+_process_qemu_cpus()
+{
 	[ -n "$qemu_cpus" ] ||
 		return 0
 	[ -n "${qemu_cpus##*[!,],[!,]*}" ] && [ -n "${qemu_cpus##*[!0-9]*}" ] ||
 		fatal "Wrong value: $qemu_cpus"
-	qemu_args="$qemu_args -smp '$qemu_cpus'"
+	qemu_args -smp "$qemu_cpus"
 }
 
-_process_qemu_memory()  {
+_process_qemu_memory()
+{
 	[ -n "$qemu_memory" ] ||
 		return 0
-	qemu_args="$qemu_args -m '$qemu_memory'"
+	qemu_args -m "$qemu_memory"
 }
 
-_process_qemu_boot()  {
+_process_qemu_boot()
+{
 	[ -n "$qemu_boot" ] ||
 		return 0
 	[ -n "${qemu_boot##*[!,],[!,]*}" ] &&
-		qemu_args="$qemu_args -boot 'order=$qemu_boot'" ||
-		qemu_args="$qemu_args -boot '$qemu_boot'"
+		qemu_args -boot "order=$qemu_boot" ||
+		qemu_args -boot "$qemu_boot"
 }
 
-_process_qemu_console() {
+_process_qemu_console()
+{
 	case "$qemu_console" in
 		''|none)
 			return 0
@@ -132,36 +150,39 @@ _process_qemu_console() {
 		serial)
 			[ -z "$qemu_kernel" ] ||
 				_append_cmdline console ttyS0
-			qemu_args="$qemu_args -device isa-serial,chardev=stdio"
+			qemu_args -device "isa-serial,chardev=stdio"
 			;;
 		virtio)
 			[ -z "$qemu_kernel" ] ||
 				_append_cmdline console hvc0
 			qemu_graphic=yes
-			qemu_args="$qemu_args -display none"
-			qemu_args="$qemu_args -device virtio-serial"
-			qemu_args="$qemu_args -device virtconsole,chardev=stdio"
+			qemu_args -display "none"
+			qemu_args -device "virtio-serial"
+			qemu_args -device "virtconsole,chardev=stdio"
 			;;
 		*)
 			fatal "BUG: Unknown console type: $qemu_console"
 			;;
 	esac
 
-	qemu_args="$qemu_args -chardev stdio,mux=on,id=stdio,signal=off"
-	qemu_args="$qemu_args -mon chardev=stdio,mode=readline"
+	qemu_args -chardev "stdio,mux=on,id=stdio,signal=off"
+	qemu_args -mon "chardev=stdio,mode=readline"
 
 	kernel_config_expect="$kernel_config_expect kernel.config.console.$qemu_console"
 }
 
-_process_qemu_logfile() {
+_process_qemu_logfile()
+{
 	return 0
 }
 
-_process_qemu_rootfs() {
+_process_qemu_rootfs()
+{
 	return 0
 }
 
-_process_qemu_monitor() {
+_process_qemu_monitor()
+{
 	[ -n "$qemu_monitor" ] ||
 		return 0
 
@@ -170,13 +191,13 @@ _process_qemu_monitor() {
 
 	case "${v%%:*}" in
 		none)
-			qemu_args="$qemu_args -monitor none"
+			qemu_args -monitor none
 			;;
 		qmp)
-			qemu_args="$qemu_args -qmp '${v#qmp:}'"
+			qemu_args -qmp "${v#qmp:}"
 			;;
 		monitor)
-			qemu_args="$qemu_args -monitor '${v#monitor:}'"
+			qemu_args -monitor "${v#monitor:}"
 			;;
 	esac
 }
@@ -184,7 +205,8 @@ _process_qemu_monitor() {
 _network_netdev_id=0
 _object_dump_filter_id=0
 
-_process_qemu_network() {
+_process_qemu_network()
+{
 	[ -n "$qemu_network" ] ||
 		return 0
 
@@ -196,25 +218,25 @@ _process_qemu_network() {
 
 		case "$v" in
 			none)
-				qemu_args="$qemu_args -net none"
+				qemu_args -net none
 				;;
 			user|user,*)
 				# user,model=virtio-net-pci
 				opts="${v#user}"
-				qemu_args="$qemu_args -nic 'user${opts:+$opts}'"
+				qemu_args -nic "user${opts:+$opts}"
 				;;
 			dump|dump,*)
 				opts="${v#dump}"
 
-				qemu_args="$qemu_args -netdev user,id=netdev-${_network_netdev_id}"
-				qemu_args="$qemu_args -device e1000,netdev=netdev-${_network_netdev_id}"
-				qemu_args="$qemu_args -object filter-dump,id=object-filter-dump-${_object_dump_filter_id},netdev=netdev-${_network_netdev_id}${opts:+$opts}"
+				qemu_args -netdev "user,id=netdev-${_network_netdev_id}"
+				qemu_args -device "e1000,netdev=netdev-${_network_netdev_id}"
+				qemu_args -object "filter-dump,id=object-filter-dump-${_object_dump_filter_id},netdev=netdev-${_network_netdev_id}${opts:+$opts}"
 
 				_network_netdev_id=$(($_network_netdev_id + 1))
 				_object_dump_filter_id=$(($_object_dump_filter_id + 1))
 				;;
 			netdev,*)
-				qemu_args="$qemu_args -netdev '${v#netdev,}'"
+				qemu_args -netdev "${v#netdev,}"
 				;;
 			*)
 				fatal "Unknown network type: $v"
@@ -226,7 +248,8 @@ _process_qemu_network() {
 
 }
 
-_process_qemu_kernel() {
+_process_qemu_kernel()
+{
 	[ -n "$qemu_kernel" ] ||
 		return 0
 
@@ -258,18 +281,20 @@ _process_qemu_kernel() {
 	[ -f "$v" ] ||
 		fatal "Unable to find kernel: $v"
 
-	qemu_args="$qemu_args -kernel '$v'"
+	qemu_args -kernel "$v"
 }
 
-_process_qemu_initrd() {
+_process_qemu_initrd()
+{
 	[ -n "$qemu_initrd" ] ||
 		return 0
 	[ -n "$qemu_kernel" ] ||
 		fatal "kernel required"
-	qemu_args="$qemu_args -initrd '$qemu_initrd'"
+	qemu_args -initrd "$qemu_initrd"
 }
 
-_process_qemu_append() {
+_process_qemu_append()
+{
 	[ -n "$qemu_append" ] ||
 		return 0
 	[ -n "$qemu_kernel" ] ||
@@ -277,7 +302,8 @@ _process_qemu_append() {
 	cmdline_foreach "$qemu_append" _append_cmdline
 }
 
-_process_qemu_addappend() {
+_process_qemu_addappend()
+{
 	[ -n "$qemu_addappend" ] ||
 		return 0
 	[ -n "$qemu_kernel" ] ||
@@ -285,37 +311,42 @@ _process_qemu_addappend() {
 	cmdline_foreach "$qemu_addappend" _append_cmdline
 }
 
-_process_qemu_balloon() {
+_process_qemu_balloon()
+{
 	[ -n "$qemu_balloon" ] ||
 		return 0
 	if shell_var_is_yes "$qemu_balloon"; then
-		qemu_args="$qemu_args -balloon virtio"
+		qemu_args -balloon virtio
 		kernel_config_expect="$kernel_config_expect kernel.config.balloon.virtio"
 	fi
 }
 
-_process_qemu_kvm() {
+_process_qemu_kvm()
+{
 	[ -n "$qemu_kvm" ] ||
 		return 0
 	! shell_var_is_yes "$qemu_kvm" ||
-		qemu_args="$qemu_args -enable-kvm"
+		qemu_args -enable-kvm
 }
 
-_process_qemu_reboot() {
+_process_qemu_reboot()
+{
 	[ -n "$qemu_reboot" ] ||
 		return 0
 	! shell_var_is_no "$qemu_reboot" ||
-		qemu_args="$qemu_args -no-reboot"
+		qemu_args -no-reboot
 }
 
-_process_qemu_graphic() {
+_process_qemu_graphic()
+{
 	[ -n "$qemu_graphic" ] ||
 		return 0
 	! shell_var_is_no "$qemu_graphic" ||
-		qemu_args="$qemu_args -nographic"
+		qemu_args -nographic
 }
 
-_process_qemu_tempdir() {
+_process_qemu_tempdir()
+{
 	[ -n "$qemu_tempdir" ] ||
 		return 0
 	local v="$qemu_tempdir"
@@ -323,7 +354,8 @@ _process_qemu_tempdir() {
 	export TMPDIR="$v"
 }
 
-_process_qemu_time() {
+_process_qemu_time()
+{
 	[ -n "$qemu_time" ] ||
 		return 0
 	case "$qemu_time" in
@@ -331,10 +363,11 @@ _process_qemu_time() {
 			qemu_time="base=$qemu_time,clock=host"
 			;;
 	esac
-	qemu_args="$qemu_args -rtc '$qemu_time'"
+	qemu_args -rtc "$qemu_time"
 }
 
-_process_qemu_watchdog() {
+_process_qemu_watchdog()
+{
 	[ -n "$qemu_watchdog" ] ||
 		return 0
 
@@ -353,10 +386,12 @@ _process_qemu_watchdog() {
 	_parse_qemu_watchdog $qemu_watchdog
 	subst_globals action "$action"
 
-	qemu_args="$qemu_args -watchdog '$model' -watchdog-action '$action'"
+	qemu_args -watchdog "$model"
+	qemu_args -watchdog-action "$action"
 }
 
-_process_qemu_disk() {
+_process_qemu_disk()
+{
 	[ -n "$qemu_disk" ] ||
 		return 0
 	local v i=0
@@ -364,25 +399,27 @@ _process_qemu_disk() {
 		eval "v=\"\$qemu_disk_$i\""
 		subst_globals v "$v"
 		[ -n "${v##*[!,],[!,]*}" ] &&
-			qemu_args="$qemu_args -drive 'file=$v,if=virtio,cache=writeback'" ||
-			qemu_args="$qemu_args -drive '$v'"
+			qemu_args -drive "file=$v,if=virtio,cache=writeback" ||
+			qemu_args -drive "$v"
 		i=$(($i + 1))
 	done
 }
 
-_process_qemu_device() {
+_process_qemu_device()
+{
 	[ -n "$qemu_device" ] ||
 		return 0
 	local v i=0
 	while [ $i -lt $qemu_device ]; do
 		eval "v=\"\$qemu_device_$i\""
 		subst_globals v "$v"
-		qemu_args="$qemu_args -device '$v'"
+		qemu_args -device "$v"
 		i=$(($i + 1))
 	done
 }
 
-_process_qemu_virtfs() {
+_process_qemu_virtfs()
+{
 	[ -n "$qemu_virtfs" ] ||
 		return 0
 	local v i=0
@@ -392,33 +429,34 @@ _process_qemu_virtfs() {
 
 		if [ -n "${v##*[!,],[!,]*}" ]; then
 			# Broken: http://patchwork.ozlabs.org/patch/127551/
-			# qemu_args="$qemu_args -virtfs 'local,id=virtfs-$i,path=${v%%:*},security_model=none,mount_tag=${v#*:}'"
+			# qemu_args -virtfs "local,id=virtfs-$i,path=${v%%:*},security_model=none,mount_tag=${v#*:}"
 
-			qemu_args="$qemu_args -fsdev 'local,id=virtfs-$i,path=${v%%:*},security_model=none'"
-			qemu_args="$qemu_args -device 'virtio-9p-pci,fsdev=virtfs-$i,mount_tag=${v#*:}'"
+			qemu_args -fsdev "local,id=virtfs-$i,path=${v%%:*},security_model=none"
+			qemu_args -device "virtio-9p-pci,fsdev=virtfs-$i,mount_tag=${v#*:}"
 		else
-			qemu_args="$qemu_args -virtfs '$v'"
+			qemu_args -virtfs "$v"
 		fi
 
 		i=$(($i + 1))
 	done
 }
 
-_process_qemu_random() {
+_process_qemu_random()
+{
 	[ -n "$qemu_random" ] ||
 		return 0
 	case "$qemu_random" in
 		virtio,/*)
 			# random=virtio,/dev/random
-			qemu_args="$qemu_args -object rng-random,filename="${qemu_random#virtio,}",id=rng0"
-			qemu_args="$qemu_args -device virtio-rng-pci,rng=rng0"
+			qemu_args -object "rng-random,filename=${qemu_random#virtio,},id=rng0"
+			qemu_args -device "virtio-rng-pci,rng=rng0"
 			kernel_config_expect="$kernel_config_expect kernel.config.rnd.virtio"
 			;;
 		egd,*)
 			# random=egd,host=10.66.4.212,port=1024
-			qemu_args="$qemu_args -chardev socket,id=chr0,${qemu_random#egd,}"
-			qemu_args="$qemu_args -object rng-egd,chardev=chr0,id=rng0"
-			qemu_args="$qemu_args -device virtio-rng-pci,rng=rng0"
+			qemu_args -chardev "socket,id=chr0,${qemu_random#egd,}"
+			qemu_args -object "rng-egd,chardev=chr0,id=rng0"
+			qemu_args -device "virtio-rng-pci,rng=rng0"
 			kernel_config_expect="$kernel_config_expect kernel.config.rnd.virtio"
 			;;
 		none)
@@ -430,7 +468,8 @@ _process_qemu_random() {
 }
 
 vm_profile="${vm_profile-}"
-_get_value() {
+_get_value()
+{
 	local name default common_value= profile_value=
 	local conf_name conf_value
 
@@ -449,7 +488,8 @@ _get_value() {
 	value="${value:-$default}"
 }
 
-_get_param_one_bool() {
+_get_param_one_bool()
+{
 	local retv value=
 	retv="$1"; shift
 
@@ -461,7 +501,8 @@ _get_param_one_bool() {
 	eval "export $retv=\"$value\""
 }
 
-_get_param_one() {
+_get_param_one()
+{
 	local retv value=
 	retv="$1"; shift
 
@@ -470,7 +511,8 @@ _get_param_one() {
 	eval "export $retv=\"$value\""
 }
 
-_get_param_list() {
+_get_param_list()
+{
 	local retv name i=0
 	local conf_name conf_value
 
@@ -487,7 +529,8 @@ _get_param_list() {
 	eval "export $retv=\"\$i\""
 }
 
-_parse_config() {
+_parse_config()
+{
 	local n t f c d
 
 	local clist="$workdir/clist"
@@ -515,7 +558,8 @@ _parse_config() {
 	done
 }
 
-vm_read_config() {
+vm_read_config()
+{
 	local vm_config_file="$1"
 	verbose "Read config: $vm_config_file"
 
@@ -526,14 +570,15 @@ vm_read_config() {
 		"_process_$name"
 	done
 
-	local args="$qemu_args -pidfile '$vm_profiles/$vm_profile/pid' -append '$qemu_cmdline'"
-	quote_shell_args qemu_args "$args"
+	qemu_args -pidfile "$vm_profiles/$vm_profile/pid"
+	qemu_args -append "$qemu_cmdline"
 
 	export qemu_exec qemu_args qemu_cmdline
 }
 
-vm_init_config() {
-	qemu_args=
+vm_init_config()
+{
+	qemu_args=0
 	qemu_cmdline=
 	qemu_cmdline_names=' '
 	qemu_exec=
@@ -541,7 +586,8 @@ vm_init_config() {
 }
 
 vm_read_config=
-vm_read_common_config() {
+vm_read_common_config()
+{
 	[ -z "$vm_read_config" ] || [ "${1-}" = "force" ] ||
 		return 0
 
@@ -555,7 +601,8 @@ vm_read_common_config() {
 }
 
 vm_profiles=
-vm_read_profile_config() {
+vm_read_profile_config()
+{
 	[ -z "$vm_read_config" ] || [ "${1-}" = "force" ] ||
 		return 0
 

@@ -56,9 +56,17 @@ for n in $vm_params; do
 done
 printf '\n'
 
+set --
+
+i=0
+while [ "$i" -lt "$qemu_args" ]; do
+	eval "v=\"\$qemu_args_$i\""
+	i=$(($i + 1))
+	set -- "$@" "$v"
+done
+
 printf 'Command to execute:\n'
 printf '%s \\\n' "$qemu_exec"
-eval set -- $qemu_args
 opt=
 for a; do
 	if [ -z "${a##-*}" ]; then
