@@ -278,9 +278,6 @@ _process_qemu_kernel()
 	local v="$qemu_kernel"
 	subst_globals v "$v"
 
-	[ -f "$v" ] ||
-		fatal "Unable to find kernel: $v"
-
 	qemu_args -kernel "$v"
 }
 
