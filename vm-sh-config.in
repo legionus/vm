@@ -86,13 +86,43 @@ qemu_args()
 	done
 }
 
+_apply_cmdline_param()
+{
+	eval "qemu_cmdline_${1}_n=\"\$2\""
+	eval "qemu_cmdline_${1}_v=\"\${3-}\""
+}
+
+qemu_cmdline=0
 _append_cmdline()
 {
-	local n="$1" v="${2-}"
-	[ -n "${qemu_cmdline_names##* $n *}" ] ||
-		return 0
-	qemu_cmdline_names="$qemu_cmdline_names$n "
-	qemu_cmdline="${qemu_cmdline:+$qemu_cmdline }$n${v:+=$v}"
+	local n="$1" v="${2-}" f="${3-}"
+	local i=0 _n _v
+
+	[ -z "$f" ] || v=
+
+	while [ "$i" -lt "$qemu_cmdline" ]; do
+		eval "_n=\"\$qemu_cmdline_${i}_n\""
+		if [ "$n" = "$_n" ]; then
+			_apply_cmdline_param "$i" "$n" "$v"
+			return
+		fi
+		i=$(($i+1))
+	done
+	_apply_cmdline_param "$i" "$n" "$v"
+	qemu_cmdline=$(($i+1))
+}
+
+_join_cmdline()
+{
+	local ret="$1"
+	local i=0
+	set --
+
+	while [ "$i" -lt "$qemu_cmdline" ]; do
+		eval "set -- \"\$@\" \"\$qemu_cmdline_${i}_n\${qemu_cmdline_${i}_v:+=\$qemu_cmdline_${i}_v}\""
+		i=$(($i+1))
+	done
+	eval "$ret=\"\$*\""
 }
 
 _process_qemu_arch()
@@ -150,7 +180,7 @@ _process_qemu_console()
 		serial)
 			[ -z "$qemu_kernel" ] ||
 				_append_cmdline console ttyS0
-			qemu_args -device "isa-serial,chardev=stdio"
+			qemu_args -serial "chardev:stdio"
 			;;
 		virtio)
 			[ -z "$qemu_kernel" ] ||
@@ -567,17 +597,18 @@ vm_read_config()
 		"_process_$name"
 	done
 
-	qemu_args -pidfile "$vm_profiles/$vm_profile/pid"
-	qemu_args -append "$qemu_cmdline"
+	local cmdline=
+	_join_cmdline cmdline
 
-	export qemu_exec qemu_args qemu_cmdline
+	qemu_args -pidfile "$vm_profiles/$vm_profile/pid"
+	[ -z "$cmdline" ] ||
+		qemu_args -append "$cmdline"
 }
 
 vm_init_config()
 {
 	qemu_args=0
-	qemu_cmdline=
-	qemu_cmdline_names=' '
+	qemu_cmdline=0
 	qemu_exec=
 	kernel_config_expect='kernel.config'
 }
