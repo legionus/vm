@@ -111,7 +111,7 @@ _process_qemu_machine()
 
 _process_qemu_cpu()
 {
-	[ -n "$qemu_cpu" ] ||
+	[ -n "$qemu_cpu" ] && [ "$qemu_cpu" != 'none' ] ||
 		return 0
 	qemu_args -cpu "$qemu_cpu"
 }
