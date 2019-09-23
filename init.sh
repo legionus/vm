@@ -1,5 +1,16 @@
 #!/bin/sh -efu
 
+busybox_links()
+{
+	[ -x /virt/bin/busybox ] ||
+		return 0
+	/virt/bin/busybox --list |
+	while read -r name; do
+		[ -e "/virt/bin/$name" ] ||
+			/virt/bin/busybox ln -s -- busybox "/virt/bin/$name"
+	done
+}
+
 loadmodules()
 {
 	[ -s "$1" ] ||
@@ -12,7 +23,7 @@ loadmodules()
 setenv()
 {
 	if [ ! -s "$1" ]; then
-		export 'PATH=/sbin:/usr/sbin:/usr/local/sbin:/bin:/usr/bin:/usr/local/bin'
+		export 'PATH=/sbin:/usr/sbin:/usr/local/sbin:/bin:/usr/bin:/usr/local/bin:/virt/bin'
 		export 'TERM=linux'
 		export 'HOME=/virt/home'
 		export 'PS1=[shell]# '
@@ -42,10 +53,12 @@ ttysz()
 
 trap : CHLD INT STOP QUIT
 
+busybox_links
 loadmodules /virt/etc/modules
 setenv /virt/etc/environ
-ttysz
+ttysz ||:
 
+do_mount /host -t 9p -o ro,trans=virtio,version=9p2000.L hostfs
 do_mount /proc -t proc proc
 do_mount /sys -t sysfs sysfs
 do_mount /dev -t devtmpfs devtmpfs
@@ -57,7 +70,7 @@ prog=/virt/sandbox.sh
 [ ! -x "$prog" ] ||
 	prog=/bin/bash
 
-"$prog"
+setsid -c "$prog"
 
 for n in i s b; do
 	echo $n > /proc/sysrq-trigger
