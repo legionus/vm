@@ -103,7 +103,25 @@ profiles="$(
 		sort -u
 )"
 
-setmax() {
+kib_to_human_readable()
+{
+	local retval="$1"; shift
+	local size="${1}00"
+	local suffix frac
+	for suffix in KiB MiB GiB TiB; do
+		if [ "$size" -lt 102400 ]; then
+			frac=$(($size % 100 + 100))
+			eval "$retval=\"\${size%??}.\${frac#1} \$suffix\""
+			return
+		fi
+		size=$(($size / 1024))
+	done
+	frac=$(($size % 100 + 100))
+	eval "$retval=\"\${size%??}.\${frac#1} PiB\""
+}
+
+setmax()
+{
 	local sz lenvar="$1" value="$2"
 	eval "sz=\"\${$lenvar:-0}\""
 	[ "$sz" -ge "${#value}" ] ||
@@ -153,18 +171,10 @@ for vm_profile in $profiles; do
 			status='running'
 
 		if [ "$status" = 'running' ]; then
-			elapsed=$(ps h -o etime "$pid")
+			v="$(ps h -o etime,rss "$pid")"
+			elapsed="${v% *}"
 			elapsed="${elapsed##* }"
-
-			rss=$(ps h -o rss "$pid")
-			rss_suffix=K
-			for s in M G T; do
-				if [ $rss -gt 10240 ]; then
-					rss="$(($rss / 1024))"
-					rss_suffix="$s"
-				fi
-			done
-			rss="$rss$rss_suffix"
+			kib_to_human_readable rss "$((${v##* }))"
 		fi
 	fi
 
