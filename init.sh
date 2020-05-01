@@ -67,7 +67,7 @@ do_mount /tmp -t tmpfs tmpfs
 
 prog=/virt/sandbox.sh
 
-[ ! -x "$prog" ] ||
+[ -x "$prog" ] ||
 	prog=/bin/bash
 
 setsid -c "$prog"
