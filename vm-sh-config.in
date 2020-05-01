@@ -21,7 +21,7 @@ vm_check_kernel_config()
 	local result expect
 
 	expect=" $(
-		cd '@PREFIX@'
+		cd '@LIBEXECDIR@'
 		grep -h -v -e '^[[:space:]]*\(#.*\)\?$' $kernel_config_expect |
 			sort -u |
 			tr '\n' ' '
@@ -44,7 +44,7 @@ vm_check_kernel_config()
 $(printf '%s\n' $miss)
 "
 		message "Check config files:
-$(printf '@PREFIX@/%s\n' $kernel_config_expect)
+$(printf '@LIBEXECDIR@/%s\n' $kernel_config_expect)
 "
 		fatal "The kernel configuration most likely not compatible with qemu."
 	fi

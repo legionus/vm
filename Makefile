@@ -54,6 +54,13 @@ BIN_HELPERS = init
 TARGETS     = $(PROGRAMS) $(HELPERS) $(BIN_HELPERS)
 SUBDIRS     =
 
+KERNEL_CONFIGS = \
+	kernel.config \
+	kernel.config.balloon.virtio \
+	kernel.config.console.serial \
+	kernel.config.console.virtio \
+	kernel.config.rnd.virtio
+
 .PHONY: $(SUBDIRS)
 
 all: $(SUBDIRS) $(TARGETS)
@@ -83,6 +90,7 @@ init: guest/init.S
 install: $(TARGETS)
 	$(MKDIR_P) -- $(DESTDIR)$(libexecdir)
 	$(INSTALL) -p -m755 $(BIN_HELPERS) $(DESTDIR)$(libexecdir)/
+	$(INSTALL) -p -m644 $(KERNEL_CONFIGS) $(DESTDIR)$(libexecdir)/
 	$(MKDIR_P) -- $(DESTDIR)$(prefix)
 	$(INSTALL) -p -m644 $(DATA) $(DESTDIR)$(prefix)/
 	$(INSTALL) -p -m755 $(HELPERS) $(DESTDIR)$(prefix)/

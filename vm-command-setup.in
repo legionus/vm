@@ -125,7 +125,7 @@ else
 fi
 
 if [ -n "$show_kconfig_requires" ]; then
-	cd '@PREFIX@'
+	cd '@LIBEXECDIR@'
 	grep -h -v -e '^[[:space:]]*\(#.*\)\?$' $kernel_config_expect |
 		sort -u
 	exit
@@ -159,7 +159,7 @@ if [ -n "$merge_kconfig_requires" ]; then
 	! "$merge_config" -h | grep -qs -e '^[[:space:]]\+-y[[:space:]]' ||
 		have_builtin=1
 
-	cd '@PREFIX@'
+	cd '@LIBEXECDIR@'
 	"$merge_config" -m ${have_builtin:+-y} -O "$kernel_dir" "$kernel_dir/.config" $kernel_config_expect
 	exit
 fi
