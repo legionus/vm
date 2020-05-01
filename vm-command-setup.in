@@ -190,7 +190,7 @@ for n in dev etc home host proc root sys tmp var var/lib virt virt/home virt/etc
 done
 
 for n in bin lib lib64 sbin usr etc/alternatives etc/ld.so.conf; do
-	[ -e "./$n" ] || [ -L "./$n" ] || [ ! -e "/host/$n" ] ||
+	[ -e "./$n" ] || [ -L "./$n" ] ||
 		ln ${verbose-} -s -- "/host/$n" "./$n"
 done
 
