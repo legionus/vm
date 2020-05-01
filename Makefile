@@ -81,11 +81,11 @@ all: $(SUBDIRS) $(TARGETS)
 	$(TOUCH_R) $< $@
 	chmod --reference=$< $@
 
-#init: guest/init.c
-#	$(CC) -static $(CFLAGS) -o $@ $<
+init: guest/init.c
+	$(CC) -static $(CFLAGS) -o $@ $<
 
-init: guest/init.S
-	$(CC) -s -nostdlib -o $@ $<
+#init: guest/init.S
+#	$(CC) -s -nostdlib -o $@ $<
 
 install: $(TARGETS)
 	$(MKDIR_P) -- $(DESTDIR)$(libexecdir)
