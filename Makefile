@@ -89,7 +89,7 @@ init: guest/init.c
 
 install: $(TARGETS)
 	$(MKDIR_P) -- $(DESTDIR)$(libexecdir)
-	$(INSTALL) -p -m755 $(BIN_HELPERS) $(DESTDIR)$(libexecdir)/
+	$(INSTALL) -p -m755 init.sh $(BIN_HELPERS) $(DESTDIR)$(libexecdir)/
 	$(INSTALL) -p -m644 $(KERNEL_CONFIGS) $(DESTDIR)$(libexecdir)/
 	$(MKDIR_P) -- $(DESTDIR)$(prefix)
 	$(INSTALL) -p -m644 $(DATA) $(DESTDIR)$(prefix)/
