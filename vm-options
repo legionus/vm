@@ -8,7 +8,7 @@ parameter \
 	'one' \
 	'machine' \
 	'machine' \
-	'type=q35,accel=kvm:tcg' \
+	'accel=kvm:tcg' \
 	'Specifies the emulated machine'
 
 parameter \
