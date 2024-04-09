@@ -469,10 +469,10 @@ _process_qemu_virtfs()
 
 		if [ -n "${v##*[!,],[!,]*}" ]; then
 			# Broken: http://patchwork.ozlabs.org/patch/127551/
-			# qemu_args -virtfs "local,id=virtfs-$i,path=${v%%:*},security_model=none,mount_tag=${v#*:}"
+			qemu_args -virtfs "local,id=virtfs-$i,path=${v%%:*},security_model=none,mount_tag=${v#*:},multidevs=remap"
 
-			qemu_args -fsdev "local,id=virtfs-$i,path=${v%%:*},security_model=none"
-			qemu_args -device "virtio-9p-pci,fsdev=virtfs-$i,mount_tag=${v#*:}"
+			#qemu_args -fsdev "local,id=virtfs-$i,path=${v%%:*},security_model=none"
+			#qemu_args -device "virtio-9p-pci,fsdev=virtfs-$i,mount_tag=${v#*:}"
 		else
 			qemu_args -virtfs "$v"
 		fi
