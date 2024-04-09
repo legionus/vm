@@ -171,6 +171,18 @@ _process_qemu_boot()
 		qemu_args -boot "$qemu_boot"
 }
 
+_set_ttysz()
+{
+	local esc cols rows
+
+	echo -ne "\e[s\e[1000;1000H\e[6n\e[u" ||
+		return 0
+	IFS=';[' read -s -t2 -dR esc rows cols ||
+		return 0
+
+	_append_cmdline winsize "${rows}x${cols}"
+}
+
 _process_qemu_console()
 {
 	case "$qemu_console" in
@@ -181,6 +193,7 @@ _process_qemu_console()
 			[ -z "$qemu_kernel" ] ||
 				_append_cmdline console ttyS0
 			qemu_args -serial "chardev:stdio"
+			_set_ttysz 2>/dev/null
 			;;
 		virtio)
 			[ -z "$qemu_kernel" ] ||

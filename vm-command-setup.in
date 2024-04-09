@@ -199,17 +199,8 @@ done
 [ -f ./etc/group ] ||
 	printf 'root:x:0:\n' > ./etc/group
 
-cat >./virt/etc/environ<<EOF
-PATH=/sbin:/usr/sbin:/usr/local/sbin:/lib/initrd/bin:/bin:/usr/bin:/usr/local/bin
-TERM=linux
-HOME=/virt/home
-PS1=[shell \W]# 
-VM_PROFILE=
-EOF
-
 cp_args=
 [ "$(stat -c '%D' "@LIBEXECDIR@" ./virt |sort -u |wc -l)" != 1 ] ||
 	cp_args="-l"
 
 cp -f ${verbose-} $cp_args -- "@LIBEXECDIR@/init" ./virt/init
-cp -f ${verbose-} $cp_args -- "@LIBEXECDIR@/init.sh" ./virt/init.sh

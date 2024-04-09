@@ -84,9 +84,6 @@ all: $(SUBDIRS) $(TARGETS)
 init: guest/init.c
 	$(CC) -static $(CFLAGS) -o $@ $<
 
-#init: guest/init.S
-#	$(CC) -s -nostdlib -o $@ $<
-
 install: $(TARGETS)
 	$(MKDIR_P) -- $(DESTDIR)$(libexecdir)
 	$(INSTALL) -p -m755 init.sh $(BIN_HELPERS) $(DESTDIR)$(libexecdir)/
