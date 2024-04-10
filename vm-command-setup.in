@@ -21,6 +21,8 @@ case "${VM_HELP-}" in
 		  -d, --delete                removes profile;
 		  -g, --global=DIR            creates global rootfs;
 		  -r, --kconfig-requires      shows kernel options required for the specified profile;
+		  -R, --kconfig-missing-requires
+		                              shows missing kernel options;
 		  -m, --kconfig-merge         merges required kernel config fragments into .config.
 		EOF
 		;;
@@ -32,8 +34,27 @@ esac
 . shell-error
 . shell-git-config
 
+get_kernel_dir()
+{
+	if [ -z "$kernel_dir" ]; then
+		n="${qemu_kernel-}"
+		while [ -e "$n" ]; do
+			if [ -s "${n%/*}/.config" ]; then
+				kernel_dir="${n%/*}"
+				break
+			fi
+			[ -z "${n##*/*}" ] ||
+				break
+			n="${n%/*}"
+		done
+	fi
+
+	[ -d "$kernel_dir" ] ||
+		fatal "unable to find kernel top directory."
+}
+
 GETOPT_ALLOW_UNKNOWN=
-TEMP=`getopt -n $PROG -o 'g:,d,m,r' -l 'global:,kconfig-merge,kconfig-requires,delete' -- "$@"` ||
+TEMP=`getopt -n $PROG -o 'g:,d,m,r,R' -l 'global:,kconfig-merge,kconfig-requires,kconfig-missing-requires,delete' -- "$@"` ||
 	show_usage
 eval set -- "$TEMP"
 
@@ -54,7 +75,10 @@ while :; do
 			merge_kconfig_requires=1
 			;;
 		-r|--kconfig-requires)
-			show_kconfig_requires=1
+			show_kconfig_requires='req'
+			;;
+		-R|--kconfig-missing-requires)
+			show_kconfig_requires='missing'
 			;;
 		--no-check-kernel-config)
 			no_check_kernel_config=1
@@ -125,28 +149,22 @@ else
 fi
 
 if [ -n "$show_kconfig_requires" ]; then
+	[ "$show_kconfig_requires" = 'req' ] ||
+		get_kernel_dir
 	cd '@LIBEXECDIR@'
 	grep -h -v -e '^[[:space:]]*\(#.*\)\?$' $kernel_config_expect |
-		sort -u
+		sort -u |
+	while read -r param; do
+		[ "$show_kconfig_requires" = 'req' ] ||
+			! grep -qs -xFe "$param" "$kernel_dir/.config" ||
+			continue
+		printf '%s\n' "$param"
+	done
 	exit
 fi
 
 if [ -n "$merge_kconfig_requires" ]; then
-	if [ -z "$kernel_dir" ]; then
-		n="${qemu_kernel-}"
-		while [ -e "$n" ]; do
-			if [ -s "${n%/*}/.config" ]; then
-				kernel_dir="${n%/*}"
-				break
-			fi
-			[ -z "${n##*/*}" ] ||
-				break
-			n="${n%/*}"
-		done
-	fi
-
-	[ -d "$kernel_dir" ] ||
-		fatal "kernel config merge doesn't make sense without kernel sources."
+	get_kernel_dir
 
 	[ -s "$kernel_dir/.config" ] ||
 		fatal "$kernel_dir/.config: kernel config not found."
