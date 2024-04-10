@@ -62,11 +62,6 @@ subst_globals rootfs "$rootfs"
 dest_dir="$vm_profiles/$vm_profile"
 mkdir $verbose -p -- "$dest_dir"
 
-[ ! -f "$rootfs/virt/etc/environ" ] ||
-	sed -i \
-		-e "s#^VM_PROFILE=.*#VM_PROFILE=$vm_profile#g" \
-		"$rootfs/virt/etc/environ"
-
 set --
 
 i=0
