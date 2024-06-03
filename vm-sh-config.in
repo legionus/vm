@@ -29,7 +29,7 @@ vm_check_kernel_config()
 	result=" $(
 		cd '@PREFIX@'
 		printf '%s\n' $expect |
-			fgrep -f- "$kernel_dir"/.config |
+			grep -F -f- "$kernel_dir"/.config |
 			sort -u |
 			tr '\n' ' '
 	)"
